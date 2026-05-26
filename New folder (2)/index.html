@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ألبوم الصور التفاعلي</title>
+    
+    <!-- استدعاء مكتبات MindAR فائقة السرعة والمستقرة جداً -->
+    <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js"></script>
+    
+    <style>
+        body { margin: 0; overflow: hidden; font-family: system-ui, -apple-system, sans-serif; user-select: none; }
+        
+        /* ضبط الكاميرا لمنع الزووم المشوه وتغطية الشاشة بأبعاد مريحة */
+        video#arjs-video {
+            width: 100vw !important;
+            height: 100vh !important;
+            object-fit: cover !important;
+            left: 0px !important;
+            top: 0px !important;
+            margin: 0px !important;
+        }
+
+        .a-canvas {
+            width: 100vw !important;
+            height: 100vh !important;
+            left: 0px !important;
+            top: 0px !important;
+        }
+
+        /* تصميم العبارة الإرشادية الأنيقة فوق الكاميرا */
+        #instruction-overlay {
+            position: absolute;
+            top: 45px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 9999;
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px rgba(255, 255, 255, 0.15) solid;
+            color: #ffffff;
+            padding: 12px 24px;
+            border-radius: 30px;
+            font-size: 14px;
+            font-weight: bold;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            white-space: nowrap;
+            pointer-events: none;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+
+        /* تصميم أزرار التحكم العائمة (زجاجي احترافي) */
+        .control-btn {
+            position: absolute;
+            z-index: 9999;
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px rgba(255, 255, 255, 0.15) solid;
+            color: white;
+            cursor: pointer;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            text-decoration: none; /* إزالة الخط السفلي للروابط */
+            white-space: nowrap !important; /* منع قص أو انقسام النص */
+        }
+        .control-btn:active { transform: scale(0.9); }
+
+        /* ----------------- تصميم أشكال الأزرار ----------------- */
+
+        /* زر كتم الصوت في الأعلى يميناً */
+        #mute-btn {
+            top: 30px !important;
+            right: 20px !important;
+            left: auto !important;
+            bottom: auto !important;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            font-size: 18px;
+        }
+
+        /* 🚨 [1] مظهر زر الفيسبوك (لحذفه بالكامل، امسح الأسطر من 97 إلى 110) 🚨 */
+        #facebook-btn {
+            bottom: 30px !important;
+            right: 20px !important;
+            left: auto !important;
+            top: auto !important;
+            background: #1877f2;
+            border-radius: 30px;
+            padding: 12px 20px;
+            font-size: 13px;
+            font-weight: bold;
+            gap: 8px;
+            border: 1px rgba(255, 255, 255, 0.25) solid;
+            box-shadow: 0 8px 20px rgba(24, 119, 242, 0.3);
+        }
+        /* 🚨 نهاية مظهر زر الفيسبوك 🚨 */
+
+        /* 🚨 [2] مظهر زر الواتساب (لحذفه بالكامل، امسح الأسطر من 114 إلى 128) 🚨 */
+        #whatsapp-btn {
+            bottom: 30px !important;
+            left: 20px !important;
+            right: auto !important;
+            top: auto !important;
+            background: #25d366;
+            border-radius: 30px;
+            padding: 12px 20px;
+            font-size: 13px;
+            font-weight: bold;
+            gap: 8px;
+            border: 1px rgba(255, 255, 255, 0.25) solid;
+            box-shadow: 0 8px 20px rgba(37, 211, 102, 0.3);
+        }
+        /* 🚨 نهاية مظهر زر الواتساب 🚨 */
+
+    </style>
+
+    <script>
+        let isTargetActive = false;
+
+        // برمجة المكون الداخلي الذكي لتشغيل وإيقاف الفيديوهات والموسيقى تلقائياً
+        AFRAME.registerComponent('video-controller', {
+            schema: {
+                video: {type: 'selector'}
+            },
+            init: function () {
+                const video = this.data.video;
+                const target = this.el;
+                const instruction = document.querySelector('#instruction-overlay');
+                const music = document.querySelector('#bg-music');
+
+                target.addEventListener('targetFound', () => {
+                    isTargetActive = true;
+                    // تشغيل الفيديو صامتاً لتجنب حظر المتصفح
+                    video.play().catch(err => console.log(err));
+                    
+                    music.play().then(() => {
+                        if (instruction) {
+                            instruction.style.opacity = '0';
+                            instruction.style.visibility = 'hidden';
+                        }
+                    }).catch(err => {
+                        console.log("تم حظر تشغيل الصوت تلقائياً");
+                        if (instruction && !music.muted) {
+                            instruction.innerHTML = "🔊 اضغط على الشاشة لتفعيل الصوت الموسيقي";
+                            instruction.style.opacity = '1';
+                            instruction.style.visibility = 'visible';
+                        }
+                    });
+                });
+
+                target.addEventListener('targetLost', () => {
+                    isTargetActive = false;
+                    video.pause();
+                    music.pause(); // يتوقف الصوت مؤقتاً دون العودة للبداية
+
+                    if (instruction) {
+                        instruction.innerHTML = "وجّه الكاميرا نحو الصورة المطبوعة 📸";
+                        instruction.style.opacity = '1';
+                        instruction.style.visibility = 'visible';
+                    }
+                });
+            }
+        });
+
+        // إدارة تفعيل أزرار التحكم بعد تحميل الصفحة
+        window.addEventListener('DOMContentLoaded', () => {
+            const music = document.querySelector('#bg-music');
+            const instruction = document.querySelector('#instruction-overlay');
+            const muteBtn = document.querySelector('#mute-btn');
+
+            // 1. منطق زر كتم وتشغيل الصوت
+            muteBtn.addEventListener('click', (e) => {
+                e.stopPropagation(); // منع انتقال النقرة لخلفية الشاشة
+                if (music.muted) {
+                    music.muted = false;
+                    muteBtn.innerHTML = "🔊";
+                    if (isTargetActive) music.play().catch(e => console.log(e));
+                } else {
+                    music.muted = true;
+                    muteBtn.innerHTML = "🔇";
+                }
+            });
+
+            // اللمس العام للشاشة لفك حظر تشغيل الصوت الأولي
+            document.body.addEventListener('click', () => {
+                if (isTargetActive && music.paused && !music.muted) {
+                    music.play().then(() => {
+                        if (instruction) {
+                            instruction.style.opacity = '0';
+                            instruction.style.visibility = 'hidden';
+                        }
+                    }).catch(e => console.log(e));
+                }
+            });
+        });
+    </script>
+</head>
+<body>
+
+    <!-- 🚨 [3] زر كتم الصوت (لحذفه بالكامل، امسح السطر 226 فقط) 🚨 -->
+    <button id="mute-btn" class="control-btn">🔊</button>
+    
+    <!-- 🚨 [4] زر الفيسبوك الفعلي (لحذفه بالكامل، امسح الأسطر من 229 إلى 231) 🚨 -->
+    <a id="facebook-btn" class="control-btn" href="https://www.facebook.com/profile.php?id=61582938020960" target="_blank">
+        🔵 صفحتنا على فيسبوك
+    </a>
+
+    <!-- 🚨 [5] زر الواتساب الفعلي (لحذفه بالكامل، امسح الأسطر من 234 إلى 236) 🚨 -->
+    <a id="whatsapp-btn" class="control-btn" href="https://wa.me/201096320826?text=السلام%20عليكم%20ورحمة%20الله%20وبركاته%2C%20أود%20الطلب%20والاستفسار%20عن%20ألبوم%20الصور%20التفاعلي" target="_blank">
+        💬 اطلب ألبومك الخاص
+    </a>
+
+    <!-- العبارة الإرشادية الذكية تظهر فوق الكاميرا من البداية -->
+    <div id="instruction-overlay">وجّه الكاميرا نحو الصورة المطبوعة 📸</div>
+
+    <!-- تتبع الصور المستقر مع فلتر منع الاهتزاز المطور -->
+    <a-scene mindar-image="imageTargetSrc: ./markers/targets.mind; autoStart: true; filterMinCF: 0.001; filterBeta: 0.01;" 
+             color-space="sRGB" 
+             renderer="colorManagement: true, physicallyCorrectLights" 
+             vr-mode-ui="enabled: false" 
+             device-orientation-permission-ui="enabled: false">
+        
+        <a-assets>
+            <!-- 🚨 [6] قائمة الفيديوهات الـ 10 (إذا كنت تريد حذف أي فيديو، امسح السطر الخاص به فقط) 🚨 -->
+            <video id="video-1" src="./videos/video1.mp4" preload="auto" loop="true" muted playsinline webkit-playsinline></video>
+            <video id="video-2" src="./videos/video2.mp4" preload="auto" loop="true" muted playsinline webkit-playsinline></video>
+            <video id="video-3" src="./videos/video3.mp4" preload="auto" loop="true" muted playsinline webkit-playsinline></video>
+            <video id="video-4" src="./videos/video4.mp4" preload="auto" loop="true" muted playsinline webkit-playsinline></video>
+            <video id="video-5" src="./videos/video5.mp4" preload="auto" loop="true" muted playsinline webkit-playsinline></video>
+            <video id="video-6" src="./videos/video6.mp4" preload="auto" loop="true" muted playsinline webkit-playsinline></video>
+            <video id="video-7" src="./videos/video7.mp4" preload="auto" loop="true" muted playsinline webkit-playsinline></video>
+            <video id="video-8" src="./videos/video8.mp4" preload="auto" loop="true" muted playsinline webkit-playsinline></video>
+            <video id="video-9" src="./videos/video9.mp4" preload="auto" loop="true" muted playsinline webkit-playsinline></video>
+            <video id="video-10" src="./videos/video10.mp4" preload="auto" loop="true" muted playsinline webkit-playsinline></video>
+            <!-- 🚨 نهاية قائمة الفيديوهات 🚨 -->
+            
+            <audio id="bg-music" src="./music.mp3" preload="auto" loop="true" crossorigin="anonymous"></audio>
+        </a-assets>
+
+        <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+
+        <!-- 🚨 [7] ربط الفيديوهات بالصور (إذا قمت بتقليل عدد الصور، امسح فقط السطور الخاصة بالصور الزائدة عن حاجتك) 🚨 -->
+
+        <!-- ==================== الصورة الأولى (ترتيب 0) ==================== -->
+        <a-entity mindar-image-target="targetIndex: 0" video-controller="video: #video-1">
+            <a-video src="#video-1" width="1" height="1.35" position="0 0 0" rotation="0 0 0"></a-video>
+        </a-entity>
+        
+        <!-- ==================== الصورة الثانية (ترتيب 1) ==================== -->
+        <a-entity mindar-image-target="targetIndex: 1" video-controller="video: #video-2">
+            <a-video src="#video-2" width="1" height="1.35" position="0 0 0" rotation="0 0 0"></a-video>
+        </a-entity>
+
+        <!-- ==================== الصورة الثالثة (ترتيب 2) ==================== -->
+        <a-entity mindar-image-target="targetIndex: 2" video-controller="video: #video-3">
+            <a-video src="#video-3" width="1" height="1.35" position="0 0 0" rotation="0 0 0"></a-video>
+        </a-entity>
+
+        <!-- ==================== الصورة الرابعة (ترتيب 3) ==================== -->
+        <a-entity mindar-image-target="targetIndex: 3" video-controller="video: #video-4">
+            <a-video src="#video-4" width="1" height="1.35" position="0 0 0" rotation="0 0 0"></a-video>
+        </a-entity>
+
+        <!-- ==================== الصورة الخامسة (ترتيب 4) ==================== -->
+        <a-entity mindar-image-target="targetIndex: 4" video-controller="video: #video-5">
+            <a-video src="#video-5" width="1" height="1.35" position="0 0 0" rotation="0 0 0"></a-video>
+        </a-entity>
+
+        <!-- ==================== الصورة السادسة (ترتيب 5) ==================== -->
+        <a-entity mindar-image-target="targetIndex: 5" video-controller="video: #video-6">
+            <a-video src="#video-6" width="1" height="1.35" position="0 0 0" rotation="0 0 0"></a-video>
+        </a-entity>
+
+        <!-- ==================== الصورة السابعة (ترتيب 6) ==================== -->
+        <a-entity mindar-image-target="targetIndex: 6" video-controller="video: #video-7">
+            <a-video src="#video-7" width="1" height="1.35" position="0 0 0" rotation="0 0 0"></a-video>
+        </a-entity>
+
+        <!-- ==================== الصورة الثامنة (ترتيب 7) ==================== -->
+        <a-entity mindar-image-target="targetIndex: 7" video-controller="video: #video-8">
+            <a-video src="#video-8" width="1" height="1.35" position="0 0 0" rotation="0 0 0"></a-video>
+        </a-entity>
+
+        <!-- ==================== الصورة التاسعة (ترتيب 8) ==================== -->
+        <a-entity mindar-image-target="targetIndex: 8" video-controller="video: #video-9">
+            <a-video src="#video-9" width="1" height="1.35" position="0 0 0" rotation="0 0 0"></a-video>
+        </a-entity>
+
+        <!-- ==================== الصورة العاشرة (ترتيب 9) ==================== -->
+        <a-entity mindar-image-target="targetIndex: 9" video-controller="video: #video-10">
+            <a-video src="#video-10" width="1" height="1.35" position="0 0 0" rotation="0 0 0"></a-video>
+        </a-entity>
+        <!-- 🚨 نهاية قسم ربط الفيديوهات بالصور 🚨 -->
+        
+    </a-scene>
+
+</body>
+</html>
