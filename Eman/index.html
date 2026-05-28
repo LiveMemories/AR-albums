@@ -1,4 +1,380 @@
-<script>
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ألبوم الصور التفاعلي</title>
+
+    <!-- خط عربي أنيق -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <!-- مكتبات MindAR و A-Frame -->
+    <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js"></script>
+
+    <style>
+        /* ====== متغيرات التصميم الأساسية ====== */
+        :root {
+            --gold: #c9a84c;
+            --gold-light: #f0d080;
+            --gold-glow: rgba(201, 168, 76, 0.35);
+            --dark-glass: rgba(8, 12, 24, 0.80);
+            --dark-glass-light: rgba(8, 12, 24, 0.55);
+            --border-glass: rgba(201, 168, 76, 0.20);
+            --white-dim: rgba(255, 255, 255, 0.88);
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: 'Tajawal', system-ui, sans-serif;
+            user-select: none;
+            background: #000;
+        }
+
+        /* ====== ضبط الكاميرا لتغطية الشاشة بالكامل ====== */
+        video#arjs-video {
+            width: 100vw !important;
+            height: 100vh !important;
+            object-fit: cover !important;
+            left: 0 !important;
+            top: 0 !important;
+            margin: 0 !important;
+        }
+
+        .a-canvas {
+            width: 100vw !important;
+            height: 100vh !important;
+            left: 0 !important;
+            top: 0 !important;
+        }
+
+        /* ====== شاشة التحميل الافتتاحية ====== */
+        #loading-screen {
+            position: fixed;
+            inset: 0;
+            z-index: 99999;
+            background: #070b16;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 28px;
+            transition: opacity 0.8s ease, visibility 0.8s ease;
+        }
+
+        #loading-screen.hidden {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        .loader-logo {
+            width: 80px;
+            height: 80px;
+            position: relative;
+        }
+
+        .loader-logo svg {
+            width: 100%;
+            height: 100%;
+            animation: spin-slow 8s linear infinite;
+        }
+
+        @keyframes spin-slow {
+            to { transform: rotate(360deg); }
+        }
+
+        .loader-inner-icon {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 26px;
+        }
+
+        .loader-title {
+            color: var(--gold-light);
+            font-size: 22px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-align: center;
+        }
+
+        .loader-subtitle {
+            color: rgba(255,255,255,0.45);
+            font-size: 13px;
+            text-align: center;
+        }
+
+        .loader-bar-track {
+            width: 180px;
+            height: 2px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .loader-bar-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, var(--gold), var(--gold-light));
+            border-radius: 2px;
+            animation: fill-bar 2.5s ease-out forwards;
+        }
+
+        @keyframes fill-bar {
+            0%   { width: 0%; }
+            60%  { width: 75%; }
+            100% { width: 100%; }
+        }
+
+        /* ====== تأثير إطار الماسح AR على حواف الشاشة ====== */
+        #scan-frame {
+            position: fixed;
+            inset: 0;
+            z-index: 9990;
+            pointer-events: none;
+        }
+
+        .corner {
+            position: absolute;
+            width: 36px;
+            height: 36px;
+            border-color: var(--gold);
+            border-style: solid;
+            opacity: 0.7;
+            transition: opacity 0.4s;
+        }
+
+        .corner.tl { top: 16px; left: 16px;  border-width: 2px 0 0 2px; border-radius: 4px 0 0 0; }
+        .corner.tr { top: 16px; right: 16px; border-width: 2px 2px 0 0; border-radius: 0 4px 0 0; }
+        .corner.bl { bottom: 16px; left: 16px;  border-width: 0 0 2px 2px; border-radius: 0 0 0 4px; }
+        .corner.br { bottom: 16px; right: 16px; border-width: 0 2px 2px 0; border-radius: 0 0 4px 0; }
+
+        #scan-frame.found .corner {
+            opacity: 1;
+            border-color: #4dff9a;
+            box-shadow: 0 0 8px rgba(77, 255, 154, 0.6);
+        }
+
+        /* خط الماسح المتحرك */
+        #scan-line {
+            position: absolute;
+            left: 10%;
+            right: 10%;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--gold), transparent);
+            animation: scan-move 2.8s ease-in-out infinite;
+            opacity: 0.55;
+        }
+
+        @keyframes scan-move {
+            0%   { top: 12%; opacity: 0; }
+            10%  { opacity: 0.55; }
+            90%  { opacity: 0.55; }
+            100% { top: 88%; opacity: 0; }
+        }
+
+        #scan-frame.found #scan-line {
+            display: none;
+        }
+
+        /* ====== العبارة الإرشادية ====== */
+        #instruction-overlay {
+            position: fixed;
+            top: 52px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 9998;
+            background: var(--dark-glass);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--border-glass);
+            color: var(--white-dim);
+            padding: 10px 22px;
+            border-radius: 40px;
+            font-size: 14px;
+            font-weight: 500;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.07);
+            white-space: nowrap;
+            pointer-events: none;
+            transition: opacity 0.5s ease, visibility 0.5s ease, transform 0.5s ease;
+            text-align: center;
+        }
+
+        #instruction-overlay.hidden {
+            opacity: 0;
+            visibility: hidden;
+            transform: translateX(-50%) translateY(-8px);
+        }
+
+        .inst-dot {
+            display: inline-block;
+            width: 7px;
+            height: 7px;
+            background: var(--gold);
+            border-radius: 50%;
+            margin-left: 8px;
+            vertical-align: middle;
+            animation: pulse-dot 1.6s ease-in-out infinite;
+        }
+
+        @keyframes pulse-dot {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.4; transform: scale(0.6); }
+        }
+
+        /* ====== مؤشر حالة الاستهداف (أعلى اليسار) ====== */
+        #status-badge {
+            position: fixed;
+            top: 52px;
+            left: 16px;
+            z-index: 9998;
+            background: var(--dark-glass-light);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid var(--border-glass);
+            color: rgba(255,255,255,0.6);
+            padding: 7px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            pointer-events: none;
+            transition: all 0.4s ease;
+        }
+
+        #status-badge .status-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.3);
+            transition: background 0.3s;
+        }
+
+        #status-badge.active {
+            color: #4dff9a;
+            border-color: rgba(77, 255, 154, 0.25);
+        }
+
+        #status-badge.active .status-dot {
+            background: #4dff9a;
+            box-shadow: 0 0 6px #4dff9a;
+            animation: pulse-dot 1s ease-in-out infinite;
+        }
+
+        /* ====== أزرار التحكم العامة ====== */
+        .control-btn {
+            position: fixed;
+            z-index: 9998;
+            background: var(--dark-glass);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--border-glass);
+            color: var(--white-dim);
+            cursor: pointer;
+            box-shadow: 0 6px 24px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.06);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Tajawal', sans-serif;
+            text-decoration: none;
+            white-space: nowrap;
+            transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+        }
+
+        .control-btn:hover {
+            border-color: var(--gold);
+            box-shadow: 0 6px 24px rgba(0,0,0,0.4), 0 0 0 1px var(--gold-glow);
+        }
+
+        .control-btn:active {
+            transform: scale(0.92);
+        }
+
+        /* ====== زر كتم الصوت ====== */
+        #mute-btn {
+            top: 110px;
+            right: 16px;
+            width: 46px;
+            height: 46px;
+            border-radius: 50%;
+            font-size: 18px;
+        }
+
+        /* ====== زر الفيسبوك ====== */
+        #facebook-btn {
+            bottom: 28px;
+            right: 16px;
+            background: rgba(24, 119, 242, 0.82);
+            border-color: rgba(100, 160, 255, 0.30);
+            border-radius: 28px;
+            padding: 11px 18px;
+            font-size: 13px;
+            font-weight: 700;
+            gap: 7px;
+            box-shadow: 0 6px 22px rgba(24, 119, 242, 0.35);
+        }
+
+        #facebook-btn:hover {
+            background: rgba(24, 119, 242, 0.95);
+            border-color: rgba(100, 160, 255, 0.55);
+        }
+
+        /* ====== زر الواتساب ====== */
+        #whatsapp-btn {
+            bottom: 28px;
+            left: 16px;
+            background: rgba(18, 170, 84, 0.82);
+            border-color: rgba(50, 220, 120, 0.30);
+            border-radius: 28px;
+            padding: 11px 18px;
+            font-size: 13px;
+            font-weight: 700;
+            gap: 7px;
+            box-shadow: 0 6px 22px rgba(18, 170, 84, 0.35);
+        }
+
+        #whatsapp-btn:hover {
+            background: rgba(18, 170, 84, 0.95);
+            border-color: rgba(50, 220, 120, 0.55);
+        }
+
+        /* ====== إشعار عند اكتشاف الصورة ====== */
+        #found-toast {
+            position: fixed;
+            bottom: 90px;
+            left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            z-index: 9998;
+            background: rgba(77, 255, 154, 0.15);
+            border: 1px solid rgba(77, 255, 154, 0.35);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            color: #4dff9a;
+            padding: 9px 20px;
+            border-radius: 30px;
+            font-size: 13px;
+            font-weight: 600;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.4s ease, transform 0.4s ease;
+        }
+
+        #found-toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+    </style>
+
+    <script>
         let isTargetActive = false;
         let toastTimer = null;
 
@@ -60,39 +436,19 @@
             const music  = document.querySelector('#bg-music');
             const instr  = document.querySelector('#instruction-overlay');
             const muteBtn = document.querySelector('#mute-btn');
-            const loader = document.querySelector('#loading-screen');
-            const loaderSubtitle = document.querySelector('.loader-subtitle');
-            const scene = document.querySelector('a-scene');
 
-            /* ---- شاشة التحميل: تختفي بعد تهيئة الكاميرا أو عند حدوث خطأ ---- */
+            /* ---- شاشة التحميل: تختفي بعد تحميل A-Frame ---- */
             const hideLoader = () => {
+                const loader = document.querySelector('#loading-screen');
                 if (loader) loader.classList.add('hidden');
             };
 
+            const scene = document.querySelector('a-scene');
             if (scene) {
-                // 1. عندما تكون الكاميرا جاهزة وتم تشغيل الـ AR بنجاح
-                scene.addEventListener('arReady', () => {
-                    setTimeout(hideLoader, 500);
-                });
-
-                // 2. في حال فشل الكاميرا (بسبب رفض الإذن أو عدم تشغيل الكود عبر HTTPS)
-                scene.addEventListener('arError', (event) => {
-                    hideLoader(); // إخفاء شاشة التحميل فوراً لرؤية رسالة الخطأ
-                    alert("⚠️ لم نتمكن من تشغيل الكاميرا!\n\nيرجى التأكد من:\n1. فتح الرابط عبر بروتوكول آمن (HTTPS) أو سيرفر محلي (Localhost).\n2. السماح للموقع بالوصول للكاميرا من إعدادات المتصفح.");
-                    if (loaderSubtitle) {
-                        loaderSubtitle.innerHTML = "<span style='color: #ff4d4d; font-weight: bold;'>⚠️ فشل تشغيل الكاميرا. يرجى تفعيل إذن الكاميرا واستخدام رابط آمن HTTPS.</span>";
-                    }
-                });
-
-                // 3. كاحتياطي أمان في حال لم يستجب حدث arReady لسبب ما
-                scene.addEventListener('loaded', () => {
-                    // ننتظر قليلاً لإعطاء الأولوية لـ arReady
-                    setTimeout(hideLoader, 3000); 
-                });
+                scene.addEventListener('loaded', () => setTimeout(hideLoader, 800));
             }
-
-            /* احتياطي أخير لضمان عدم بقاء الشاشة معلقة للأبد تحت أي ظرف */
-            setTimeout(hideLoader, 8000);
+            /* احتياطي: إذا تأخّر A-Frame */
+            setTimeout(hideLoader, 7000);
 
             /* ---- زر كتم الصوت ---- */
             muteBtn.addEventListener('click', e => {
@@ -112,3 +468,144 @@
             });
         });
     </script>
+</head>
+<body>
+
+    <!-- ===== شاشة التحميل الافتتاحية ===== -->
+    <div id="loading-screen">
+        <div class="loader-logo">
+            <svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="40" cy="40" r="36" stroke="#c9a84c" stroke-width="1.5"
+                        stroke-dasharray="6 6" opacity="0.6"/>
+                <circle cx="40" cy="40" r="28" stroke="#c9a84c" stroke-width="0.8" opacity="0.3"/>
+            </svg>
+            <div class="loader-inner-icon">📷</div>
+        </div>
+        <div class="loader-title">ألبوم الصور التفاعلي</div>
+        <div class="loader-subtitle">جارٍ تهيئة كاميرا الواقع المعزز…</div>
+        <div class="loader-bar-track">
+            <div class="loader-bar-fill"></div>
+        </div>
+    </div>
+
+    <!-- ===== إطار الماسح AR ===== -->
+    <div id="scan-frame">
+        <div class="corner tl"></div>
+        <div class="corner tr"></div>
+        <div class="corner bl"></div>
+        <div class="corner br"></div>
+        <div id="scan-line"></div>
+    </div>
+
+    <!-- ===== مؤشر الحالة ===== -->
+    <div id="status-badge">
+        <span class="status-dot"></span>
+        <span class="status-label">جاهز</span>
+    </div>
+
+    <!-- ===== العبارة الإرشادية ===== -->
+    <div id="instruction-overlay">
+        <span class="inst-dot"></span> وجّه الكاميرا نحو الصورة المطبوعة 📸
+    </div>
+
+    <!-- ===== إشعار اكتشاف الصورة ===== -->
+    <div id="found-toast"></div>
+
+    <!-- 🚨 [3] زر كتم الصوت (لحذفه، امسح هذا السطر فقط) 🚨 -->
+    <button id="mute-btn" class="control-btn">🔊</button>
+
+    <!-- 🚨 [4] زر الفيسبوك (لحذفه، امسح الأسطر الثلاثة التالية) 🚨 -->
+    <a id="facebook-btn" class="control-btn"
+       href="https://www.facebook.com/profile.php?id=61582938020960" target="_blank">
+        🔵 صفحتنا على فيسبوك
+    </a>
+
+    <!-- 🚨 [5] زر الواتساب (لحذفه، امسح الأسطر الثلاثة التالية) 🚨 -->
+    <a id="whatsapp-btn" class="control-btn"
+       href="https://wa.me/201096320826?text=السلام%20عليكم%20ورحمة%20الله%20وبركاته%2C%20أود%20الطلب%20والاستفسار%20عن%20ألبوم%20الصور%20التفاعلي"
+       target="_blank">
+        💬 اطلب ألبومك الخاص
+    </a>
+
+    <!-- ===== مشهد A-Frame الرئيسي ===== -->
+    <a-scene
+        mindar-image="imageTargetSrc: ./markers/targets.mind; autoStart: true; filterMinCF: 0.001; filterBeta: 0.01;"
+        color-space="sRGB"
+        renderer="colorManagement: true, physicallyCorrectLights"
+        vr-mode-ui="enabled: false"
+        device-orientation-permission-ui="enabled: false">
+
+        <a-assets>
+            <!-- 🚨 [6] قائمة الفيديوهات الـ 10 🚨 -->
+            <video id="video-1"  src="./videos/video1.mp4"  preload="auto" loop muted playsinline webkit-playsinline></video>
+            <video id="video-2"  src="./videos/video2.mp4"  preload="auto" loop muted playsinline webkit-playsinline></video>
+            <video id="video-3"  src="./videos/video3.mp4"  preload="auto" loop muted playsinline webkit-playsinline></video>
+            <video id="video-4"  src="./videos/video4.mp4"  preload="auto" loop muted playsinline webkit-playsinline></video>
+            <video id="video-5"  src="./videos/video5.mp4"  preload="auto" loop muted playsinline webkit-playsinline></video>
+            <video id="video-6"  src="./videos/video6.mp4"  preload="auto" loop muted playsinline webkit-playsinline></video>
+            <video id="video-7"  src="./videos/video7.mp4"  preload="auto" loop muted playsinline webkit-playsinline></video>
+            <video id="video-8"  src="./videos/video8.mp4"  preload="auto" loop muted playsinline webkit-playsinline></video>
+            <video id="video-9"  src="./videos/video9.mp4"  preload="auto" loop muted playsinline webkit-playsinline></video>
+            <video id="video-10" src="./videos/video10.mp4" preload="auto" loop muted playsinline webkit-playsinline></video>
+
+            <audio id="bg-music" src="./music.mp3" preload="auto" loop crossorigin="anonymous"></audio>
+        </a-assets>
+
+        <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+
+        <!-- 🚨 [7] ربط الفيديوهات بالصور 🚨 -->
+
+        <!-- الصورة الأولى (ترتيب 0) -->
+        <a-entity mindar-image-target="targetIndex: 0" video-controller="video: #video-1">
+            <a-video src="#video-1" width="1" height="1.35" position="0 0 0" rotation="0 0 0"></a-video>
+        </a-entity>
+
+        <!-- الصورة الثانية (ترتيب 1) -->
+        <a-entity mindar-image-target="targetIndex: 1" video-controller="video: #video-2">
+            <a-video src="#video-2" width="1" height="1.35" position="0 0 0" rotation="0 0 0"></a-video>
+        </a-entity>
+
+        <!-- الصورة الثالثة (ترتيب 2) — ✅ تم تصحيح: كانت تعرض video-4 بدلاً من video-3 -->
+        <a-entity mindar-image-target="targetIndex: 2" video-controller="video: #video-3">
+            <a-video src="#video-3" width="1" height="1.35" position="0 0 0" rotation="0 0 0"></a-video>
+        </a-entity>
+
+        <!-- الصورة الرابعة (ترتيب 3) -->
+        <a-entity mindar-image-target="targetIndex: 3" video-controller="video: #video-4">
+            <a-video src="#video-4" width="1" height="1.35" position="0 0 0" rotation="0 0 0"></a-video>
+        </a-entity>
+
+        <!-- الصورة الخامسة (ترتيب 4) -->
+        <a-entity mindar-image-target="targetIndex: 4" video-controller="video: #video-5">
+            <a-video src="#video-5" width="1" height="1.35" position="0 0 0" rotation="0 0 0"></a-video>
+        </a-entity>
+
+        <!-- الصورة السادسة (ترتيب 5) -->
+        <a-entity mindar-image-target="targetIndex: 5" video-controller="video: #video-6">
+            <a-video src="#video-6" width="1" height="1.35" position="0 0 0" rotation="0 0 0"></a-video>
+        </a-entity>
+
+        <!-- الصورة السابعة (ترتيب 6) -->
+        <a-entity mindar-image-target="targetIndex: 6" video-controller="video: #video-7">
+            <a-video src="#video-7" width="1" height="1.35" position="0 0 0" rotation="0 0 0"></a-video>
+        </a-entity>
+
+        <!-- الصورة الثامنة (ترتيب 7) -->
+        <a-entity mindar-image-target="targetIndex: 7" video-controller="video: #video-8">
+            <a-video src="#video-8" width="1" height="1.35" position="0 0 0" rotation="0 0 0"></a-video>
+        </a-entity>
+
+        <!-- الصورة التاسعة (ترتيب 8) -->
+        <a-entity mindar-image-target="targetIndex: 8" video-controller="video: #video-9">
+            <a-video src="#video-9" width="1" height="1.35" position="0 0 0" rotation="0 0 0"></a-video>
+        </a-entity>
+
+        <!-- الصورة العاشرة (ترتيب 9) -->
+        <a-entity mindar-image-target="targetIndex: 9" video-controller="video: #video-10">
+            <a-video src="#video-10" width="1" height="1.35" position="0 0 0" rotation="0 0 0"></a-video>
+        </a-entity>
+
+    </a-scene>
+
+</body>
+</html>
