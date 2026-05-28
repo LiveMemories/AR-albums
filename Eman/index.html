@@ -87,23 +87,41 @@
         }
 
         .lm-monogram {
-            width: 110px;
-            height: 110px;
+            width: 140px;
+            height: 140px;
             position: relative;
         }
 
         /* الحلقات الدوارة حول المونوغرام */
-        .lm-ring-outer {
-            animation: spin-slow 12s linear infinite;
-            transform-origin: center;
-        }
-        .lm-ring-inner {
-            animation: spin-slow 7s linear infinite reverse;
-            transform-origin: center;
-        }
+        /* --- حلقات الدوران --- */
+        .lm-ring-outer  { animation: lm-cw  22s linear infinite;  transform-origin: 70px 70px; }
+        .lm-ring-mid    { animation: lm-ccw 13s linear infinite;  transform-origin: 70px 70px; }
+        .lm-ring-inner  { animation: lm-cw   7s linear infinite;  transform-origin: 70px 70px; }
 
-        @keyframes spin-slow {
-            to { transform: rotate(360deg); }
+        /* --- قوس الذنب المتوهج (ثلاث طبقات) --- */
+        .lm-arc-main  { animation: lm-cw 2.2s cubic-bezier(0.4,0,0.6,1) infinite;
+                        transform-origin: 70px 70px; }
+        .lm-arc-mid   { animation: lm-cw 2.2s cubic-bezier(0.4,0,0.6,1) infinite;
+                        transform-origin: 70px 70px; animation-delay: 0.12s; }
+        .lm-arc-tail  { animation: lm-cw 2.2s cubic-bezier(0.4,0,0.6,1) infinite;
+                        transform-origin: 70px 70px; animation-delay: 0.24s; }
+
+        /* --- نبضة الهالة الخلفية --- */
+        .lm-pulse-halo { animation: lm-pulse 2.8s ease-in-out infinite;
+                         transform-origin: 70px 70px; }
+
+        /* --- وميض المركز --- */
+        .lm-center-breathe { animation: lm-breathe 2.4s ease-in-out infinite; }
+
+        @keyframes lm-cw    { to   { transform: rotate( 360deg); } }
+        @keyframes lm-ccw   { to   { transform: rotate(-360deg); } }
+        @keyframes lm-pulse {
+            0%, 100% { opacity: 0.04; transform: scale(0.95); }
+            50%      { opacity: 0.16; transform: scale(1.06); }
+        }
+        @keyframes lm-breathe {
+            0%, 100% { opacity: 1;   }
+            50%      { opacity: 0.55; }
         }
 
         .loader-brand-name {
@@ -581,48 +599,69 @@
     <div id="loading-screen">
         <div class="lm-logo-wrap">
 
-            <!-- مونوغرام LM بالـ SVG -->
+            <!-- مونوغرام LM بالـ SVG - تصميم الذنب المذنبي الفاخر -->
             <div class="lm-monogram">
-                <svg viewBox="0 0 110 110" fill="none" xmlns="http://www.w3.org/2000/svg" width="110" height="110">
-                    <!-- هالة خارجية متوهجة -->
-                    <circle cx="55" cy="55" r="50" fill="rgba(201,168,76,0.04)"/>
+                <svg viewBox="0 0 140 140" fill="none" xmlns="http://www.w3.org/2000/svg" width="140" height="140">
 
-                    <!-- الحلقة الخارجية المنقطة الدوارة -->
+                    <!-- [ 1 ] هالة نابضة خلفية -->
+                    <circle class="lm-pulse-halo" cx="70" cy="70" r="66"
+                            stroke="#c9a84c" stroke-width="22" opacity="0.06" fill="none"/>
+
+                    <!-- [ 2 ] حلقة خارجية منقطة دوارة مع نقاط البوصلة الأربع -->
                     <g class="lm-ring-outer">
-                        <circle cx="55" cy="55" r="47" stroke="#c9a84c" stroke-width="0.8"
-                                stroke-dasharray="3 5" opacity="0.5"/>
+                        <circle cx="70" cy="70" r="63" stroke="#c9a84c" stroke-width="0.6"
+                                stroke-dasharray="1.5 7" opacity="0.38"/>
+                        <circle cx="70" cy="7"   r="2.5" fill="#c9a84c" opacity="0.9"/>
+                        <circle cx="133" cy="70" r="2.5" fill="#c9a84c" opacity="0.9"/>
+                        <circle cx="70" cy="133" r="2.5" fill="#c9a84c" opacity="0.9"/>
+                        <circle cx="7"  cy="70"  r="2.5" fill="#c9a84c" opacity="0.9"/>
                     </g>
 
-                    <!-- الإطار الماسي الخارجي -->
-                    <path d="M55 8 L96 30 L102 55 L96 80 L55 102 L14 80 L8 55 L14 30 Z"
-                          stroke="#c9a84c" stroke-width="1.2" fill="none" opacity="0.6"/>
+                    <!-- [ 3 ] إطار ثماني الأضلاع ثابت -->
+                    <path d="M70 13 L115 38 L127 70 L115 102 L70 127 L25 102 L13 70 L25 38 Z"
+                          stroke="#c9a84c" stroke-width="0.8" fill="none" opacity="0.30"/>
 
-                    <!-- الحلقتان البيضاويتان المتقاطعتان (رمز العدسة) -->
+                    <!-- [ 4 ] قوس الذنب المضيء - ثلاث طبقات (الأثقل → الأخف) -->
+                    <!-- ذنب بعيد (أضعف وأطول تأخير) -->
+                    <circle class="lm-arc-tail" cx="70" cy="70" r="56"
+                            stroke="#c9a84c" stroke-width="3.5"
+                            stroke-dasharray="30 322" stroke-linecap="round" opacity="0.18"/>
+                    <!-- ذنب قريب -->
+                    <circle class="lm-arc-mid" cx="70" cy="70" r="56"
+                            stroke="#c9a84c" stroke-width="2.8"
+                            stroke-dasharray="65 287" stroke-linecap="round" opacity="0.42"/>
+                    <!-- الرأس المضيء (الأقوى) -->
+                    <circle class="lm-arc-main" cx="70" cy="70" r="56"
+                            stroke="#f0d080" stroke-width="2.2"
+                            stroke-dasharray="95 257" stroke-linecap="round" opacity="1"/>
+
+                    <!-- [ 5 ] حلقة وسطى معاكسة الاتجاه -->
+                    <g class="lm-ring-mid">
+                        <circle cx="70" cy="70" r="48" stroke="#c9a84c" stroke-width="0.7"
+                                stroke-dasharray="3.5 7" opacity="0.38"/>
+                    </g>
+
+                    <!-- [ 6 ] الحلقات البيضاوية الثلاث المتقاطعة (رمز العدسة) -->
                     <g class="lm-ring-inner">
-                        <ellipse cx="55" cy="55" rx="26" ry="16" stroke="#c9a84c"
-                                 stroke-width="1.5" fill="none" opacity="0.75"/>
-                        <ellipse cx="55" cy="55" rx="26" ry="16" stroke="#c9a84c"
-                                 stroke-width="1.5" fill="none" opacity="0.75"
-                                 transform="rotate(60 55 55)"/>
-                        <ellipse cx="55" cy="55" rx="26" ry="16" stroke="#c9a84c"
-                                 stroke-width="1.5" fill="none" opacity="0.75"
-                                 transform="rotate(120 55 55)"/>
+                        <ellipse cx="70" cy="70" rx="33" ry="18" stroke="#c9a84c"
+                                 stroke-width="1.2" fill="none" opacity="0.52"/>
+                        <ellipse cx="70" cy="70" rx="33" ry="18" stroke="#c9a84c"
+                                 stroke-width="1.2" fill="none" opacity="0.52"
+                                 transform="rotate(60 70 70)"/>
+                        <ellipse cx="70" cy="70" rx="33" ry="18" stroke="#c9a84c"
+                                 stroke-width="1.2" fill="none" opacity="0.52"
+                                 transform="rotate(120 70 70)"/>
                     </g>
 
-                    <!-- دائرة داخلية -->
-                    <circle cx="55" cy="55" r="20" fill="rgba(8,12,24,0.9)"
-                            stroke="#c9a84c" stroke-width="1"/>
+                    <!-- [ 7 ] دائرة المركز الداكنة -->
+                    <circle cx="70" cy="70" r="23"
+                            fill="rgba(6,9,20,0.97)" stroke="#c9a84c" stroke-width="1"/>
 
-                    <!-- حروف LM -->
-                    <text x="55" y="61" text-anchor="middle"
-                          font-family="Cinzel, serif" font-size="16" font-weight="700"
-                          fill="#f0d080" letter-spacing="1">LM</text>
-
-                    <!-- نقاط الزوايا الزخرفية -->
-                    <circle cx="55" cy="8"   r="2" fill="#c9a84c" opacity="0.8"/>
-                    <circle cx="55" cy="102" r="2" fill="#c9a84c" opacity="0.8"/>
-                    <circle cx="8"  cy="55"  r="2" fill="#c9a84c" opacity="0.8"/>
-                    <circle cx="102" cy="55" r="2" fill="#c9a84c" opacity="0.8"/>
+                    <!-- [ 8 ] حروف LM وامضة -->
+                    <text class="lm-center-breathe" x="70" y="76"
+                          text-anchor="middle" font-family="Cinzel, serif"
+                          font-size="16" font-weight="700"
+                          fill="#f0d080" letter-spacing="2">LM</text>
                 </svg>
             </div>
 
