@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ألبوم الصور التفاعلي</title>
+    <title>LiveMemories · AR Photo Album</title>
 
     <!-- خط عربي أنيق -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&family=Cinzel:wght@400;600;700&family=Cormorant+Garamond:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
 
     <!-- مكتبات MindAR و A-Frame -->
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
@@ -72,43 +72,149 @@
             pointer-events: none;
         }
 
-        .loader-logo {
-            width: 80px;
-            height: 80px;
+        /* ---- اللوجو الرئيسي في شاشة التحميل ---- */
+        .lm-logo-wrap {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0;
+            animation: logo-appear 1s ease both;
+        }
+
+        @keyframes logo-appear {
+            from { opacity: 0; transform: translateY(18px) scale(0.92); }
+            to   { opacity: 1; transform: translateY(0)    scale(1); }
+        }
+
+        .lm-monogram {
+            width: 110px;
+            height: 110px;
             position: relative;
         }
 
-        .loader-logo svg {
-            width: 100%;
-            height: 100%;
-            animation: spin-slow 8s linear infinite;
+        /* الحلقات الدوارة حول المونوغرام */
+        .lm-ring-outer {
+            animation: spin-slow 12s linear infinite;
+            transform-origin: center;
+        }
+        .lm-ring-inner {
+            animation: spin-slow 7s linear infinite reverse;
+            transform-origin: center;
         }
 
         @keyframes spin-slow {
             to { transform: rotate(360deg); }
         }
 
-        .loader-inner-icon {
-            position: absolute;
-            inset: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 26px;
+        .loader-brand-name {
+            font-family: 'Cinzel', serif;
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: 3px;
+            color: var(--gold-light);
+            text-align: center;
+            margin-top: 12px;
+            text-shadow: 0 0 28px rgba(201,168,76,0.45);
         }
 
-        .loader-title {
-            color: var(--gold-light);
-            font-size: 22px;
-            font-weight: 700;
-            letter-spacing: 2px;
+        .loader-brand-name span {
+            color: var(--gold);
+        }
+
+        .loader-tagline {
+            font-family: 'Cormorant Garamond', serif;
+            font-style: italic;
+            font-size: 13px;
+            letter-spacing: 2.5px;
+            color: rgba(255,255,255,0.40);
             text-align: center;
+            margin-top: 5px;
+            text-transform: uppercase;
+        }
+
+        .loader-divider {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 2px;
+        }
+        .loader-divider::before,
+        .loader-divider::after {
+            content: '';
+            width: 40px;
+            height: 0.5px;
+            background: linear-gradient(90deg, transparent, var(--gold));
+        }
+        .loader-divider::after {
+            background: linear-gradient(90deg, var(--gold), transparent);
+        }
+        .loader-divider-gem {
+            width: 5px;
+            height: 5px;
+            background: var(--gold);
+            transform: rotate(45deg);
         }
 
         .loader-subtitle {
-            color: rgba(255,255,255,0.45);
-            font-size: 13px;
+            color: rgba(255,255,255,0.38);
+            font-size: 12px;
             text-align: center;
+            letter-spacing: 0.5px;
+        }
+
+        /* ---- شارة العلامة التجارية الثابتة فوق الكاميرا ---- */
+        #brand-bar {
+            position: fixed;
+            top: 16px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 9997;
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            pointer-events: none;
+        }
+
+        .brand-bar-inner {
+            background: var(--dark-glass);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border: 1px solid var(--border-glass);
+            border-radius: 40px;
+            padding: 7px 18px 7px 10px;
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            box-shadow: 0 4px 18px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.05);
+        }
+
+        .brand-bar-monogram {
+            width: 28px;
+            height: 28px;
+            flex-shrink: 0;
+        }
+
+        .brand-bar-text {
+            display: flex;
+            flex-direction: column;
+            line-height: 1.1;
+        }
+
+        .brand-bar-name {
+            font-family: 'Cinzel', serif;
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            color: var(--gold-light);
+        }
+
+        .brand-bar-sub {
+            font-family: 'Cormorant Garamond', serif;
+            font-style: italic;
+            font-size: 9.5px;
+            letter-spacing: 1.8px;
+            color: rgba(255,255,255,0.38);
+            text-transform: uppercase;
         }
 
         .loader-bar-track {
@@ -473,18 +579,96 @@
 
     <!-- ===== شاشة التحميل الافتتاحية ===== -->
     <div id="loading-screen">
-        <div class="loader-logo">
-            <svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="40" cy="40" r="36" stroke="#c9a84c" stroke-width="1.5"
-                        stroke-dasharray="6 6" opacity="0.6"/>
-                <circle cx="40" cy="40" r="28" stroke="#c9a84c" stroke-width="0.8" opacity="0.3"/>
-            </svg>
-            <div class="loader-inner-icon">📷</div>
+        <div class="lm-logo-wrap">
+
+            <!-- مونوغرام LM بالـ SVG -->
+            <div class="lm-monogram">
+                <svg viewBox="0 0 110 110" fill="none" xmlns="http://www.w3.org/2000/svg" width="110" height="110">
+                    <!-- هالة خارجية متوهجة -->
+                    <circle cx="55" cy="55" r="50" fill="rgba(201,168,76,0.04)"/>
+
+                    <!-- الحلقة الخارجية المنقطة الدوارة -->
+                    <g class="lm-ring-outer">
+                        <circle cx="55" cy="55" r="47" stroke="#c9a84c" stroke-width="0.8"
+                                stroke-dasharray="3 5" opacity="0.5"/>
+                    </g>
+
+                    <!-- الإطار الماسي الخارجي -->
+                    <path d="M55 8 L96 30 L102 55 L96 80 L55 102 L14 80 L8 55 L14 30 Z"
+                          stroke="#c9a84c" stroke-width="1.2" fill="none" opacity="0.6"/>
+
+                    <!-- الحلقتان البيضاويتان المتقاطعتان (رمز العدسة) -->
+                    <g class="lm-ring-inner">
+                        <ellipse cx="55" cy="55" rx="26" ry="16" stroke="#c9a84c"
+                                 stroke-width="1.5" fill="none" opacity="0.75"/>
+                        <ellipse cx="55" cy="55" rx="26" ry="16" stroke="#c9a84c"
+                                 stroke-width="1.5" fill="none" opacity="0.75"
+                                 transform="rotate(60 55 55)"/>
+                        <ellipse cx="55" cy="55" rx="26" ry="16" stroke="#c9a84c"
+                                 stroke-width="1.5" fill="none" opacity="0.75"
+                                 transform="rotate(120 55 55)"/>
+                    </g>
+
+                    <!-- دائرة داخلية -->
+                    <circle cx="55" cy="55" r="20" fill="rgba(8,12,24,0.9)"
+                            stroke="#c9a84c" stroke-width="1"/>
+
+                    <!-- حروف LM -->
+                    <text x="55" y="61" text-anchor="middle"
+                          font-family="Cinzel, serif" font-size="16" font-weight="700"
+                          fill="#f0d080" letter-spacing="1">LM</text>
+
+                    <!-- نقاط الزوايا الزخرفية -->
+                    <circle cx="55" cy="8"   r="2" fill="#c9a84c" opacity="0.8"/>
+                    <circle cx="55" cy="102" r="2" fill="#c9a84c" opacity="0.8"/>
+                    <circle cx="8"  cy="55"  r="2" fill="#c9a84c" opacity="0.8"/>
+                    <circle cx="102" cy="55" r="2" fill="#c9a84c" opacity="0.8"/>
+                </svg>
+            </div>
+
+            <!-- اسم الشركة -->
+            <div class="loader-brand-name">Live<span>Memories</span></div>
+
+            <!-- الفاصل الزخرفي -->
+            <div class="loader-divider"><div class="loader-divider-gem"></div></div>
+
+            <!-- الشعار الفرعي -->
+            <div class="loader-tagline">AR Photo Album &nbsp;·&nbsp; Relive Your Best Moments</div>
         </div>
-        <div class="loader-title">ألبوم الصور التفاعلي</div>
+
         <div class="loader-subtitle">جارٍ تهيئة كاميرا الواقع المعزز…</div>
+
         <div class="loader-bar-track">
             <div class="loader-bar-fill"></div>
+        </div>
+    </div>
+
+    <!-- ===== شارة العلامة التجارية الثابتة ===== -->
+    <div id="brand-bar">
+        <div class="brand-bar-inner">
+            <!-- مونوغرام مصغّر -->
+            <svg class="brand-bar-monogram" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M14 2 L25 7.5 L27 14 L25 20.5 L14 26 L3 20.5 L1 14 L3 7.5 Z"
+                      stroke="#c9a84c" stroke-width="0.8" fill="rgba(8,12,24,0.6)" opacity="0.8"/>
+                <ellipse cx="14" cy="14" rx="7" ry="4.5" stroke="#c9a84c"
+                         stroke-width="0.9" fill="none" opacity="0.6"/>
+                <ellipse cx="14" cy="14" rx="7" ry="4.5" stroke="#c9a84c"
+                         stroke-width="0.9" fill="none" opacity="0.6"
+                         transform="rotate(60 14 14)"/>
+                <ellipse cx="14" cy="14" rx="7" ry="4.5" stroke="#c9a84c"
+                         stroke-width="0.9" fill="none" opacity="0.6"
+                         transform="rotate(120 14 14)"/>
+                <circle cx="14" cy="14" r="4.5" fill="rgba(8,12,24,0.95)"
+                        stroke="#c9a84c" stroke-width="0.7"/>
+                <text x="14" y="17.5" text-anchor="middle"
+                      font-family="Cinzel,serif" font-size="5" font-weight="700"
+                      fill="#f0d080">LM</text>
+            </svg>
+
+            <div class="brand-bar-text">
+                <span class="brand-bar-name">LiveMemories</span>
+                <span class="brand-bar-sub">AR Photo Album</span>
+            </div>
         </div>
     </div>
 
