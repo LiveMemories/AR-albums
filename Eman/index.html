@@ -606,18 +606,18 @@
 
     <script>
         let isTargetActive = false;
-        let muteBtnState = false; // false تعني الصوت يعمل، true تعني مكتوم
+        let muteBtnState = false; // false الصوت يعمل، true مكتوم
         let toastTimer = null;
-        let customAudioLinks = {}; // مصفوفة لتخزين روابط الصوت الموسيقي المضافة
+        let customAudioLinks = {}; 
 
-        // تتبع عناصر التشغيل الحالية للتفاعل الفوري مع نقر الشاشة
+        // عناصر التشغيل الحالية للتفاعل المباشر
         let activeVideo = null;
         let activeAudio = null;
 
-        // قراءة ملف الروابط التفاعلية الذي يجهزه السيرفر تلقائياً
+        // قراءة آمنة لملف الروابط التفاعلية المرفوع بواسطة الـ PHP إن وجد
         fetch('./audio_links.json')
             .then(res => {
-                if (isTargetActive) return; // حماية
+                if (isTargetActive) return; 
                 return res.ok ? res.json() : {};
             })
             .then(data => { customAudioLinks = data || {}; })
@@ -632,7 +632,7 @@
             toastTimer = setTimeout(() => toast.classList.remove('show'), 2500);
         }
 
-        // كود معالج الـ AR الذكي للتحكم بالصوت والفيديو بشكل متزامن وبمنتهى الاحترافية
+        // كود معالج الـ AR الذكي للتحكم بالصوت والفيديو بشكل متزامن
         AFRAME.registerComponent('video-controller', {
             schema: { 
                 video: { type: 'selector' },
@@ -673,11 +673,11 @@
                     const localAudioSrc = `./audios/${pageNum}.mp3`;
                     const customLink = customAudioLinks[pageNum] || "";
 
-                    // فحص آمن ومتوافق مع جميع الاستضافات المجانية والمدفوعة دون عمل جمود للكود
+                    // فحص آمن ومتوافق مع جميع السيرفرات ومستودعات الجيت هاب
                     if (customLink !== "") {
                         playCustomAudio(customLink);
                     } else {
-                        // محاولة تحميل ملف الصوت المحلي، وإذا لم يتواجد نشغل صوت الفيديو تلقائياً
+                        // محاولة تحميل ملف الصوت المحلي المخصص، وإذا لم يتواجد نشغل صوت الفيديو تلقائياً
                         audio.src = localAudioSrc;
                         audio.addEventListener('error', function fallback() {
                             playVideoWithSound();
@@ -779,12 +779,10 @@
                 muteBtn.textContent = muteBtnState ? '🔇' : '🔊';
 
                 if (isTargetActive) {
-                    // إذا كان هناك مشغل موسيقى (MP3 أو رابط) نشط حالياً
                     if (activeAudio && activeAudio.src && !activeAudio.src.endsWith('undefined')) {
                         activeAudio.muted = muteBtnState;
                         if (!muteBtnState) activeAudio.play().catch(() => {});
                     } else if (activeVideo) {
-                        // وإلا نقوم بإلغاء كتم صوت الفيديو نفسه
                         activeVideo.muted = muteBtnState;
                         if (!muteBtnState) activeVideo.play().catch(() => {});
                     }
@@ -942,7 +940,7 @@
         device-orientation-permission-ui="enabled: false">
 
         <a-assets>
-            <!-- ⚠️ تم تعديل قائمة الـ src للفيديوهات الـ 20 لتقرأ بأسماء (video1.mp4 وحتى video20.mp4) طبقاً لطلبك -->
+            <!-- الفيديوهات الـ 20 من مجلد videos وبأسماء video1.mp4 حتى video20.mp4 لمطابقة مستودع GitHub تماماً -->
             <video id="video-1"  src="./videos/video1.mp4" preload="auto" loop muted playsinline webkit-playsinline></video>
             <video id="video-2"  src="./videos/video2.mp4" preload="auto" loop muted playsinline webkit-playsinline></video>
             <video id="video-3"  src="./videos/video3.mp4" preload="auto" loop muted playsinline webkit-playsinline></video>
@@ -965,7 +963,7 @@
             <video id="video-20" src="./videos/video20.mp4" preload="auto" loop muted playsinline webkit-playsinline></video>
 
             <!-- الإطار الزخرفي المذهب المتوهج المعتمد للـ AR فوق الفيديو -->
-            <img id="video-frame" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMDAgMjcwIiB3aWR0aD0iMjAwIiBoZWlnaHQ9IjI3MCI+CiAgPHBhdGggZD0iTTIsNTUgTDIsMiBMNTUsMiIgc3Ryb2tlPSIjYzlhODRjIiBzdHJva2Utd2lkdGg9IjMiIGZpbGw9Im5vbmUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgogIDxwYXRoIGQ9Ik05LDQ1IEw5LDkgTDQ1LDkiIHN0cm9rZT0iI2M5YTg0YyIgc3Ryb2tlLXdpZHRoPSIwLjkiIGZpbGw9Im5vbmUiIG9wYWNpdHk9IjAuNTUiLz4KICA8Y2lyY2xlIGN4PSIyIiBjeT0iMiIgcj0iMy41IiBmaWxsPSIjYzlhODRjIi8+CiAgPHBvbHlnb24gcG9pbnRzPSIyMiwyIDI2LDYgMjIsMTAgMTgsNiIgZmlsbD0iI2M5YTg0YyIgb3BhY2l0eT0iMC43Ii8+CiAgPHBhdGggZD0iTTE5OCw1NSBMMTk4LDIgTDE0NSwyIiBzdHJva2U9IiNjOWE4NGMiIHN0cm9rZS13aWR0aD0iMyIgZmlsbD0ibm9uZSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+CiAgPHBhdGggZD0iTTE5MSw0NSBMMTkxLDkgTDE1NSw5IiBzdHJva2U9IiNjOWE4NGMiIHN0cm9rZS13aWR0aD0iMC45IiBmaWxsPSJub25lIiBvcGFjaXR5PSIwLjU1Ii8+CiAgPGNpcmNsZSBjeD0iMTk4IiBjeT0iMiIgcj0iMy41IiBmaWxsPSIjYzlhODRjIi8+CiAgPHBvbHlnb24gcG9pbnRzPSIxNzgsMiAxODIsNiAxNzgsMTAgMTc0LDYiIGZpbGw9IiNjOWE4NGMiIG9wYWNpdHk9IjAuNyIvPgogIDxwYXRoIGQ9Ik0yLDIxNSBMMiwyNjggTDU1LDI2OCIgc3Ryb2tlPSIjYzlhODRjIiBzdHJva2Utd2lkdGg9IjMiIGZpbGw9Im5vbmUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgogIDxwYXRoIGQ9Ik05LDIyNSBMOSwyNjEgTDQ1LDI2MSIgc3Ryb2tlPSIjYzlhODRjIiBzdHJva2Utd2lkdGg9IjAuOSIgZmlsbD0ibm9uZSIgb3BhY2l0eT0iMC41YSIvPgogIDxjaXJjbGUgY3g9IjIiIGN5PSIyNjgiIHI9IjMuNSIgZmlsbD0iI2M5YTg0YyIvPgogIDxwb2x5Z29uIHBvaW50cz0iMjIsMjY4IDI2LDI2NCAyMiwyNjAgMTgsMjY0IiBmaWxsPSIjYzlhODRjIiBvcGFjaXR5PSIwLjciLz4KICA8cGF0aCBkPSJNMTk4LDIxNSBMMTk4LDI2OCBMMTQ1LDI2OCIgc3Ryb2tlPSIjYzlhODRjIiBzdHJva2Utd2lkdGg9IjMiIGZpbGw9Im5vbmUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgogIDxwYXRoIGQ9Ik0xOTEsMjI1IEwxOTEsMjYxIEwxNTUsMjYxIiBzdHJva2U9IiNjOWE4NGMiIHN0cm9rZS13aWR0aD0iMC45IiBmaWxsPSJub25lIiBvcGFjaXR5PSIwLjU1Ii8+CiAgPGNpcmNsZSBjeD0iMTk4IiBjeT0iMjY4IiByPSIzLjUiIGZpbGw9IiNjOWE4NGMiLz4KICA8cG9seWdvbiBwb2ludHM9IjE3OCwyNjggMTgyLDI2NCAxNzgsMjYwIDE3NCwyNjQiIGZpbGw9IiNjOWE4NGMiIG9wYWNpdHk9IjAuNyIvPgogIDxwb2x5Z29uIHBvaW50cz0iMTAwLDEgMTA0LDUgMTAwLDkgOTYsNSIgZmlsbD0iI2M5YTg0YyIgb3BhY2l0eT0iMC44NSIvPgogIDxwb2x5Z29uIHBvaW50cz0iMTAwLDI2OSAxMDQsMjY1IDEwMCwyNjEgOTYsMjY1IiBmaWxsPSIjYzlhODRjIiBvcGFjaXR5PSIwLjg1Ii8+CiAgPHBvbHlnb24gcG9pbnRzPSIxLDEzNSA1LDEzMSA5LDEzNSA1LDEzOSIgZmlsbD0iI2M5YTg0YyIgb3BhY2l0eT0iMC44NSIvPgogIDxwb2x5Z29uIHBvaW50cz0iMTk5LDEzNSAxOTUsMTMxIDE5MSwxMzUgMTk1LDEzOSIgZmlsbD0iI2M5YTg0YyIgb3BhY2l0eT0iMC44NSIvPgogIDxsaW5lIHgxPSIyIiB5MT0iNzAiIHgyPSIyIiB5Mj0iMTIwIiBzdHJva2U9IiNjOWE4NGMiIHN0cm9rZS13aWR0aD0iMC42IiBvcGFjaXR5PSIwLjy1Ii8+CiAgPGxpbmUgeDE9IjIiIHkxPSIxMTAiIHgyPSIyIiB5Mj0iMjAwIiBzdHJva2U9IiNjOWE4NGMiIHN0cm9rZS13aWR0aD0iMC42IiBvcGFjaXR5PSIwLjI1Ii8+CiAgPGxpbmUgeDE9IjE5OCIgeTE9IjcwIiB4Mj0iMTk4IiB5Mj0iMTIwIiBzdHJva2U9IiNjOWE4NGMiIHN0cm9rZS13aWR0aD0iMC42IiBvcGFjaXR5PSIwLjI1Ii8+CiAgPGxpbmUgeDE9IjE5OCIgeTE9IjE1MCIgeDI9IjE5OCIgeTI9IjIwMCIgc3Ryb2tlPSIjYzlhODRjIiBzdHJva2Utd2lkdGg9IjAuNiIgb3BhY2l0eT0iMC4yNSIvPgogIDxsaW5lIHgxPSI3MCIgeTE9IjIiIHgyPSI5MCIgeTI9IjIiIHN0cm9rZT0iI2M5YTg0YyIgc3Ryb2tlLXdpZHRoPSIwLjYiIG9wYWNpdHk9IjAuMjUiLz4KICA8bGluZSB4MT0iMTEwIiB5MT0iMiIgeDI9IjEzMCIgeTI9IjIiIHN0cm9rZT0iI2M5YTg0YyIgc3Ryb2tlLXdpZHRoPSIwLjYiIG9wYWNpdHk9IjAuMjUiLz4KICA8bGluZSB4MT0iNzAiIHkxPSIyNjgiIHgyPSI5MCIgeTI9IjI2OCIgc3Ryb2tlPSIjYzlhODRjIiBzdHJva2Utd2lkdGg9IjAuNiIgb3BhY2l0eT0iMC4yNSIvPgogIDsaW5lIHgxPSIxMTAiIHkxPSIyNjgiIHgyPSIxMzAiIHkyPSIyNjgiIHN0cm9rZT0iI2M5YTg0YyIgc3Ryb2tlLXdpZHRoPSIwLjYiIG9wYWNpdHk9IjAuMjUiLz4KPC9zdmc+" crossorigin="anonymous">
+            <img id="video-frame" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMDAgMjcwIiB3aWR0aD0iMjAwIiBoZWlnaHQ9IjI3MCI+CiAgPHBhdGggZD0iTTIsNTUgTDIsMiBMNTUsMiIgc3Ryb2tlPSIjYzlhODRjIiBzdHJva2Utd2lkdGg9IjMiIGZpbGw9Im5vbmUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgogIDxwYXRoIGQ9Ik05LDQ1IEw5LDkgTDQ1LDkiIHN0cm9rZT0iI2M5YTg0YyIgc3Ryb2tlLXdpZHRoPSIwLjkiIGZpbGw9Im5vbmUiIG9wYWNpdHk9IjAuNTUiLz4KICA8Y2lyY2xlIGN4PSIyIiBjeT0iMiIgcj0iMy41IiBmaWxsPSIjYzlhODRjIi8+CiAgPHBvbHlnb24gcG9pbnRzPSIyMiwyIDI2LDYgMjIsMTAgMTgsNiIgZmlsbD0iI2M5YTg0YyIgb3BhY2l0eT0iMC43Ii8+CiAgPHBhdGggZD0iTTE5OCw1NSBMMTk4LDIgTDE0NSwyIiBzdHJva2U9IiNjOWE4NGMiIHN0cm9rZS13aWR0aD0iMyIgZmlsbD0ibm9uZSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+CiAgPHBhdGggZD0iTTE5MSw0NSBMMTkxLDkgTDE1NSw5IiBzdHJva2U9IiNjOWE4NGMiIHN0cm9rZS13aWR0aD0iMC45IiBmaWxsPSJub25lIiBvcGFjaXR5PSIwLjU1Ii8+CiAgPGNpcmNsZSBjeD0iMTk4IiBjeT0iMiIgcj0iMy41IiBmaWxsPSIjYzlhODRjIi8+CiAgPHBvbHlnb24gcG9pbnRzPSIxNzgsMiAxODIsNiAxNzgsMTAgMTc0LDYiIGZpbGw9IiNjOWE4NGMiIG9wYWNpdHk9IjAuNyIvPgogIDxwYXRoIGQ9Ik0yLDIxNSBMMiwyNjggTDU1LDI2OCIgc3Ryb2tlPSIjYzlhODRjIiBzdHJva2Utd2lkdGg9IjMiIGZpbGw9Im5vbmUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgogIDxwYXRoIGQ9Ik05LDIyNSBMOSwyNjEgTDQ1LDI2MSIgc3Ryb2tlPSIjYzlhODRjIiBzdHJva2Utd2lkdGg9IjAuOSIgZmlsbD0ibm9uZSIgb3BhY2l0eT0iMC41YSIvPgogIDxjaXJjbGUgY3g9IjIiIGN5PSIyNjgiIHI9IjMuNSIgZmlsbD0iI2M5YTg0YyIvPgogIDxwb2x5Z29uIHBvaW50cz0iMjIsMjY4IDI2LDI2NCAyMiwyNjAgMTgsMjY0IiBmaWxsPSIjYzlhODRjIiBvcGFjaXR5PSIwLjciLz4KICA8cGF0aCBkPSJNMTk4LDIxNSBMMTk4LDI2OCBMMTQ1LDI2OCIgc3Ryb2tlPSIjYzlhODRjIiBzdHJva2Utd2lkdGg9IjMiIGZpbGw9Im5vbmUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgogIDxwYXRoIGQ9Ik0xOTEsMjI1IEwxOTEsMjYxIEwxNTUsMjYxIiBzdHJva2U9IiNjOWE4NGMiIHN0cm9rZS13aWR0aD0iMC45IiBmaWxsPSJub25lIiBvcGFjaXR5PSIwLjU1Ii8+CiAgPGNpcmNsZSBjeD0iMTk4IiBjeT0iMjY4IiByPSIzLjUiIGZpbGw9IiNjOWE4NGMiLz4KICA8cG9seWdvbiBwb2ludHM9IjE3OCwyNjggMTgyLDI2NCAxNzgsMjYwIDE3NCwyNjQiIGZpbGw9IiNjOWE4NGMiIG9wYWNpdHk9IjAuNyIvPgogIDxwb2x5Z29uIHBvaW50cz0iMTAwLDEgMTA0LDUgMTAwLDkgOTYsNSIgZmlsbD0iI2M5YTg0YyIgb3BhY2l0eT0iMC44NSIvPgogIDxwb2x5Z29uIHBvaW50cz0iMTAwLDI2OSAxMDQsMjY1IDEwMCwyNjEgOTYsMjY1IiBmaWxsPSIjYzlhODRjIiBvcGFjaXR5PSIwLjg1Ii8+CiAgPHBvbHlnb24gcG9pbnRzPSIxLDEzNSA1LDEzMSA5LDEzNSA1LDEzOSIgZmlsbD0iI2M5YTg0YyIgb3BhY2l0eT0iMC44NSIvPgogIDxwb2x5Z29uIHBvaW50cz0iMTk5LDEzNSAxOTUsMTMxIDE5MSwxMzUgMTk1LDEzOSIgZmlsbD0iI2M5YTg0YyIgb3BhY2l0eT0iMC44NSIvPgogIDxsaW5lIHgxPSIyIiB5MT0iNzAiIHgyPSIyIiB5Mj0iMTIwIiBzdHJva2U9IiNjOWE4NGMiIHN0cm9rZS13aWR0aD0iMC42IiBvcGFjaXR5PSIwLjI1Ii8+CiAgPGxpbmUgeDE9IjIiIHkxPSIxMTAiIHgyPSIyIiB5Mj0iMjAwIiBzdHJva2U9IiNjOWE4NGMiIHN0cm9rZS13aWR0aD0iMC42IiBvcGFjaXR5PSIwLjI1Ii8+CiAgPGxpbmUgeDE9IjE5OCIgeTE9IjcwIiB4Mj0iMTk4IiB5Mj0iMTIwIiBzdHJva2U9IiNjOWE4NGMiIHN0cm9rZS13aWR0aD0iMC42IiBvcGFjaXR5PSIwLjI1Ii8+CiAgPGxpbmUgeDE9IjE5OCIgeTE9IjE1MCIgeDI9IjE5OCIgeTI9IjIwMCIgc3Ryb2tlPSIjYzlhODRjIiBzdHJva2Utd2lkdGg9IjAuNiIgb3BhY2l0eT0iMC4yNSIvPgogIDxsaW5lIHgxPSI3MCIgeTE9IjIiIHgyPSI5MCIgeTI9IjIiIHN0cm9rZT0iI2M5YTg0YyIgc3Ryb2tlLXdpZHRoPSIwLjYiIG9wYWNpdHk9IjAuMjUiLz4KICA8bGluZSB4MT0iMTEwIiB5MT0iMiIgeDI9IjEzMCIgeTI9IjIiIHN0cm9rZT0iI2M5YTg0YyIgc3Ryb2tlLXdpZHRoPSIwLjYiIG9wYWNpdHk9IjAuMjUiLz4KICA8bGluZSB4MT0iNzAiIHkxPSIyNjgiIHgyPSI5MCIgeTI9IjI2OCIgc3Ryb2tlPSIjYzlhODRjIiBzdHJva2Utd2lkdGg9IjAuNiIgb3BhY2l0eT0iMC4yNSIvPgogIDxsaW5lIHgxPSIxMTAiIHkxPSIyNjgiIHgyPSIxMzAiIHkyPSIyNjgiIHN0cm9rZT0iI2M5YTg0YyIgc3Ryb2tlLXdpZHRoPSIwLjYiIG9wYWNpdHk9IjAuMjUiLz4KPC9zdmc+" crossorigin="anonymous">
         </a-assets>
 
         <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
@@ -1092,7 +1090,7 @@
             <a-image src="#video-frame" width="1" height="1.35" position="0 0 0.002" material="transparent: true; alphaTest: 0.01; shader: flat"></a-image>
         </a-entity>
 
-    </a-scene>
+    </-scene>
 
 </body>
 </html>
