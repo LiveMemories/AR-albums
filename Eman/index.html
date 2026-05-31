@@ -93,24 +93,19 @@
         }
 
         /* الحلقات الدوارة حول المونوغرام */
-        /* --- حلقات الدوران --- */
         .lm-ring-outer  { animation: lm-cw  22s linear infinite;  transform-origin: 70px 70px; }
         .lm-ring-mid    { animation: lm-ccw 13s linear infinite;  transform-origin: 70px 70px; }
         .lm-ring-inner  { animation: lm-cw   7s linear infinite;  transform-origin: 70px 70px; }
 
-        /* --- قوس الذنب المتوهج (ثلاث طبقات) --- */
-        .lm-arc-main  { animation: lm-cw 2.2s cubic-bezier(0.4,0,0.6,1) infinite;
-                        transform-origin: 70px 70px; }
-        .lm-arc-mid   { animation: lm-cw 2.2s cubic-bezier(0.4,0,0.6,1) infinite;
-                        transform-origin: 70px 70px; animation-delay: 0.12s; }
-        .lm-arc-tail  { animation: lm-cw 2.2s cubic-bezier(0.4,0,0.6,1) infinite;
-                        transform-origin: 70px 70px; animation-delay: 0.24s; }
+        /* قوس الذنب المتوهج (ثلاث طبقات) */
+        .lm-arc-main  { animation: lm-cw 2.2s cubic-bezier(0.4,0,0.6,1) infinite; transform-origin: 70px 70px; }
+        .lm-arc-mid   { animation: lm-cw 2.2s cubic-bezier(0.4,0,0.6,1) infinite; transform-origin: 70px 70px; animation-delay: 0.12s; }
+        .lm-arc-tail  { animation: lm-cw 2.2s cubic-bezier(0.4,0,0.6,1) infinite; transform-origin: 70px 70px; animation-delay: 0.24s; }
 
-        /* --- نبضة الهالة الخلفية --- */
-        .lm-pulse-halo { animation: lm-pulse 2.8s ease-in-out infinite;
-                         transform-origin: 70px 70px; }
+        /* نبضة الهالة الخلفية */
+        .lm-pulse-halo { animation: lm-pulse 2.8s ease-in-out infinite; transform-origin: 70px 70px; }
 
-        /* --- وميض المركز --- */
+        /* وميض المركز */
         .lm-center-breathe { animation: lm-breathe 2.4s ease-in-out infinite; }
 
         @keyframes lm-cw    { to   { transform: rotate( 360deg); } }
@@ -611,7 +606,19 @@
 
     <script>
         let isTargetActive = false;
+        let muteBtnState = false; // false تعني الصوت يعمل، true تعني مكتوم
         let toastTimer = null;
+        let customAudioLinks = {}; // مصفوفة لتخزين روابط الصوت الموسيقي المضافة
+
+        // تتبع عناصر التشغيل الحالية للتفاعل الفوري مع نقر الشاشة
+        let activeVideo = null;
+        let activeAudio = null;
+
+        // قراءة ملف الروابط التفاعلية الذي يجهزه السيرفر تلقائياً
+        fetch('./audio_links.json')
+            .then(res => res.json())
+            .then(data => { customAudioLinks = data; })
+            .catch(err => console.log("لم يتم تفعيل روابط صوتية خارجية للعميل."));
 
         function showToast(msg) {
             const toast = document.querySelector('#found-toast');
@@ -622,22 +629,36 @@
             toastTimer = setTimeout(() => toast.classList.remove('show'), 2500);
         }
 
+        // كود معالج الـ AR الذكي للتحكم بالصوت والفيديو بشكل متزامن وبمنتهى الاحترافية
         AFRAME.registerComponent('video-controller', {
-            schema: { video: { type: 'selector' } },
+            schema: { 
+                video: { type: 'selector' },
+                pageNum: { type: 'string' }
+            },
             init: function () {
                 const video      = this.data.video;
+                const pageNum    = this.data.pageNum;
                 const target     = this.el;
                 const instr      = document.querySelector('#instruction-overlay');
-                const music      = document.querySelector('#bg-music');
                 const frame      = document.querySelector('#scan-frame');
                 const status     = document.querySelector('#status-badge');
                 const scanCircle = document.querySelector('#scan-circle');
                 const guideFrame = document.querySelector('#guide-frame-box');
 
+                // إنشاء مشغل صوت (Audio) ديناميكي منفصل لكل صفحة بشكل مستقل
+                const audio = document.createElement('audio');
+                audio.setAttribute('preload', 'auto');
+                audio.setAttribute('loop', 'true');
+                audio.setAttribute('crossorigin', 'anonymous');
+                this.audio = audio;
+                document.body.appendChild(audio);
+
                 target.addEventListener('targetFound', () => {
                     isTargetActive = true;
-                    video.play().catch(e => console.log(e));
+                    activeVideo = video;
+                    activeAudio = audio;
 
+                    // تحديث مؤشرات الواجهة الجمالية التي صممتها (found / active)
                     frame && frame.classList.add('found');
                     status && status.classList.add('active');
                     if (status) status.querySelector('.status-label').textContent = 'جارٍ العرض';
@@ -646,18 +667,64 @@
                     guideFrame && guideFrame.classList.add('hidden');
                     showToast('✦ تم اكتشاف الصورة');
 
-                    music.play().catch(() => {
-                        if (!music.muted && instr) {
+                    const localAudioSrc = `./audios/${pageNum}.mp3`;
+                    const customLink = customAudioLinks[pageNum] || "";
+
+                    // فحص ذكي: هل العميل رفع ملف موسيقى MP3 لهذه الصفحة، أم أضاف رابطاً، أم نكتفي بصوت الفيديو؟
+                    fetch(localAudioSrc, { method: 'HEAD' })
+                        .then(res => {
+                            if (res.ok) {
+                                // 1. العميل رفع ملف MP3 مخصص لهذه الصفحة
+                                playCustomAudio(localAudioSrc);
+                            } else if (customLink !== "") {
+                                // 2. العميل وضع رابط موسيقى لهذه الصفحة
+                                playCustomAudio(customLink);
+                            } else {
+                                // 3. نستخدم صوت الفيديو الأصلي
+                                playVideoWithSound();
+                            }
+                        })
+                        .catch(() => {
+                            if (customLink !== "") {
+                                playCustomAudio(customLink);
+                            } else {
+                                playVideoWithSound();
+                            }
+                        });
+
+                    function playCustomAudio(src) {
+                        video.muted = true; // كتم صوت الفيديو تماماً
+                        video.play().catch(e => console.log(e));
+
+                        audio.src = src;
+                        audio.muted = muteBtnState; // اتباع زر كتم الصوت العام
+                        audio.play()
+                            .then(() => instr && instr.classList.add('hidden'))
+                            .catch(() => showAudioTapHint());
+                    }
+
+                    function playVideoWithSound() {
+                        video.muted = muteBtnState; // اتباع زر كتم الصوت العام
+                        video.play()
+                            .then(() => instr && instr.classList.add('hidden'))
+                            .catch(() => showAudioTapHint());
+                    }
+
+                    function showAudioTapHint() {
+                        if (!muteBtnState && instr) {
                             instr.innerHTML = '<span class="inst-dot"></span> اضغط على الشاشة لتفعيل الصوت';
                             instr.classList.remove('hidden');
                         }
-                    });
+                    }
                 });
 
                 target.addEventListener('targetLost', () => {
                     isTargetActive = false;
                     video.pause();
-                    music.pause();
+                    audio.pause();
+
+                    activeVideo = null;
+                    activeAudio = null;
 
                     frame && frame.classList.remove('found');
                     status && status.classList.remove('active');
@@ -674,7 +741,6 @@
         });
 
         window.addEventListener('DOMContentLoaded', () => {
-            const music    = document.querySelector('#bg-music');
             const instr    = document.querySelector('#instruction-overlay');
             const muteBtn  = document.querySelector('#mute-btn');
             const guide    = document.querySelector('#guide-frame-box');
@@ -684,7 +750,6 @@
             const hideLoader = () => {
                 const loader = document.querySelector('#loading-screen');
                 if (loader) loader.classList.add('hidden');
-                /* أظهر "جارٍ تهيئة الكاميرا" في منطقة الإرشاد */
                 if (instr && !cameraReady) {
                     instr.innerHTML = '<span class="cam-spinner"></span> جارٍ تهيئة الكاميرا…';
                     instr.classList.remove('hidden');
@@ -694,12 +759,10 @@
             const onCameraReady = () => {
                 if (cameraReady) return;
                 cameraReady = true;
-                /* بدّل الرسالة إلى الإرشاد الفعلي */
                 if (instr) {
                     instr.innerHTML = '<span class="inst-dot"></span> وجّه الكاميرا نحو الصورة المطبوعة 📸';
                     instr.classList.remove('hidden');
                 }
-                /* أظهر الإطار الإرشادي */
                 guide && guide.classList.remove('hidden');
             };
 
@@ -708,25 +771,40 @@
                 scene.addEventListener('loaded', () => setTimeout(hideLoader, 800));
                 scene.addEventListener('arReady', onCameraReady);
             }
-            /* احتياطي: إذا لم يُطلَق arReady بعد 5 ثوانٍ */
             setTimeout(onCameraReady, 5000);
-            /* احتياطي لشاشة التحميل */
             setTimeout(hideLoader, 7000);
 
-            /* ---- زر كتم الصوت ---- */
+            /* ---- زر كتم الصوت التفاعلي الموحد لجميع المصادر ---- */
             muteBtn.addEventListener('click', e => {
                 e.stopPropagation();
-                music.muted = !music.muted;
-                muteBtn.textContent = music.muted ? '🔇' : '🔊';
-                if (!music.muted && isTargetActive) music.play().catch(() => {});
+                muteBtnState = !muteBtnState;
+                muteBtn.textContent = muteBtnState ? '🔇' : '🔊';
+
+                if (isTargetActive) {
+                    // إذا كان هناك مشغل موسيقى (MP3 أو رابط) نشط حالياً
+                    if (activeAudio && activeAudio.src && !activeAudio.src.endsWith('undefined')) {
+                        activeAudio.muted = muteBtnState;
+                        if (!muteBtnState) activeAudio.play().catch(() => {});
+                    } else if (activeVideo) {
+                        // وإلا نقوم بإلغاء كتم صوت الفيديو نفسه
+                        activeVideo.muted = muteBtnState;
+                        if (!muteBtnState) activeVideo.play().catch(() => {});
+                    }
+                }
             });
 
-            /* ---- لمس الشاشة لفك حظر الصوت ---- */
+            /* ---- لمس الشاشة العام لفك حظر الصوت وتفعيله ---- */
             document.body.addEventListener('click', () => {
-                if (isTargetActive && music.paused && !music.muted) {
-                    music.play().then(() => {
-                        instr && instr.classList.add('hidden');
-                    }).catch(() => {});
+                if (isTargetActive && !muteBtnState) {
+                    if (activeAudio && activeAudio.paused && activeAudio.src && !activeAudio.src.endsWith('undefined')) {
+                        activeAudio.play().then(() => {
+                            instr && instr.classList.add('hidden');
+                        }).catch(() => {});
+                    } else if (activeVideo && activeVideo.paused) {
+                        activeVideo.play().then(() => {
+                            instr && instr.classList.add('hidden');
+                        }).catch(() => {});
+                    }
                 }
             });
         });
@@ -734,74 +812,37 @@
 </head>
 <body>
 
-    <!-- ===== شاشة التحميل الافتتاحية ===== -->
+    <!-- ===== شاشة التحميل الافتتاحية المذهلة الخاصة بك ===== -->
     <div id="loading-screen">
         <div class="lm-logo-wrap">
-
-            <!-- مونوغرام LM بالـ SVG - تصميم الذنب المذنبي الفاخر -->
             <div class="lm-monogram">
                 <svg viewBox="0 0 140 140" fill="none" xmlns="http://www.w3.org/2000/svg" width="140" height="140">
-
-                    <!-- [ 1 ] هالة نابضة خلفية -->
-                    <circle class="lm-pulse-halo" cx="70" cy="70" r="66"
-                            stroke="#c9a84c" stroke-width="22" opacity="0.06" fill="none"/>
-
-                    <!-- [ 2 ] حلقة خارجية منقطة دوارة مع نقاط البوصلة الأربع -->
+                    <circle class="lm-pulse-halo" cx="70" cy="70" r="66" stroke="#c9a84c" stroke-width="22" opacity="0.06" fill="none"/>
                     <g class="lm-ring-outer">
-                        <circle cx="70" cy="70" r="63" stroke="#c9a84c" stroke-width="0.6"
-                                stroke-dasharray="1.5 7" opacity="0.38"/>
+                        <circle cx="70" cy="70" r="63" stroke="#c9a84c" stroke-width="0.6" stroke-dasharray="1.5 7" opacity="0.38"/>
                         <circle cx="70" cy="7"   r="2.5" fill="#c9a84c" opacity="0.9"/>
                         <circle cx="133" cy="70" r="2.5" fill="#c9a84c" opacity="0.9"/>
                         <circle cx="70" cy="133" r="2.5" fill="#c9a84c" opacity="0.9"/>
                         <circle cx="7"  cy="70"  r="2.5" fill="#c9a84c" opacity="0.9"/>
                     </g>
-
-                    <!-- [ 3 ] إطار ثماني الأضلاع ثابت -->
-                    <path d="M70 13 L115 38 L127 70 L115 102 L70 127 L25 102 L13 70 L25 38 Z"
-                          stroke="#c9a84c" stroke-width="0.8" fill="none" opacity="0.30"/>
-
-                    <!-- [ 5 ] حلقة وسطى معاكسة الاتجاه -->
+                    <path d="M70 13 L115 38 L127 70 L115 102 L70 127 L25 102 L13 70 L25 38 Z" stroke="#c9a84c" stroke-width="0.8" fill="none" opacity="0.30"/>
                     <g class="lm-ring-mid">
-                        <circle cx="70" cy="70" r="48" stroke="#c9a84c" stroke-width="0.7"
-                                stroke-dasharray="3.5 7" opacity="0.38"/>
+                        <circle cx="70" cy="70" r="48" stroke="#c9a84c" stroke-width="0.7" stroke-dasharray="3.5 7" opacity="0.38"/>
                     </g>
-
-                    <!-- [ 6 ] الحلقات البيضاوية الثلاث المتقاطعة (رمز العدسة) -->
                     <g class="lm-ring-inner">
-                        <ellipse cx="70" cy="70" rx="33" ry="18" stroke="#c9a84c"
-                                 stroke-width="1.2" fill="none" opacity="0.52"/>
-                        <ellipse cx="70" cy="70" rx="33" ry="18" stroke="#c9a84c"
-                                 stroke-width="1.2" fill="none" opacity="0.52"
-                                 transform="rotate(60 70 70)"/>
-                        <ellipse cx="70" cy="70" rx="33" ry="18" stroke="#c9a84c"
-                                 stroke-width="1.2" fill="none" opacity="0.52"
-                                 transform="rotate(120 70 70)"/>
+                        <ellipse cx="70" cy="70" rx="33" ry="18" stroke="#c9a84c" stroke-width="1.2" fill="none" opacity="0.52"/>
+                        <ellipse cx="70" cy="70" rx="33" ry="18" stroke="#c9a84c" stroke-width="1.2" fill="none" opacity="0.52" transform="rotate(60 70 70)"/>
+                        <ellipse cx="70" cy="70" rx="33" ry="18" stroke="#c9a84c" stroke-width="1.2" fill="none" opacity="0.52" transform="rotate(120 70 70)"/>
                     </g>
-
-                    <!-- [ 7 ] دائرة المركز الداكنة -->
-                    <circle cx="70" cy="70" r="23"
-                            fill="rgba(6,9,20,0.97)" stroke="#c9a84c" stroke-width="1"/>
-
-                    <!-- [ 8 ] حروف LM وامضة -->
-                    <text class="lm-center-breathe" x="70" y="76"
-                          text-anchor="middle" font-family="Cinzel, serif"
-                          font-size="16" font-weight="700"
-                          fill="#f0d080" letter-spacing="2">LM</text>
+                    <circle cx="70" cy="70" r="23" fill="rgba(6,9,20,0.97)" stroke="#c9a84c" stroke-width="1"/>
+                    <text class="lm-center-breathe" x="70" y="76" text-anchor="middle" font-family="Cinzel, serif" font-size="16" font-weight="700" fill="#f0d080" letter-spacing="2">LM</text>
                 </svg>
             </div>
-
-            <!-- اسم الشركة -->
             <div class="loader-brand-name">Live<span>Memories</span></div>
-
-            <!-- الفاصل الزخرفي -->
             <div class="loader-divider"><div class="loader-divider-gem"></div></div>
-
-            <!-- الشعار الفرعي -->
             <div class="loader-tagline">AR Photo Album &nbsp;·&nbsp; Relive Your Best Moments</div>
         </div>
-
         <div class="loader-subtitle">جارٍ تهيئة كاميرا الواقع المعزز…</div>
-
         <div class="loader-bar-track">
             <div class="loader-bar-fill"></div>
         </div>
@@ -810,25 +851,14 @@
     <!-- ===== شارة العلامة التجارية الثابتة ===== -->
     <div id="brand-bar">
         <div class="brand-bar-inner">
-            <!-- مونوغرام مصغّر -->
             <svg class="brand-bar-monogram" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M14 2 L25 7.5 L27 14 L25 20.5 L14 26 L3 20.5 L1 14 L3 7.5 Z"
-                      stroke="#c9a84c" stroke-width="0.8" fill="rgba(8,12,24,0.6)" opacity="0.8"/>
-                <ellipse cx="14" cy="14" rx="7" ry="4.5" stroke="#c9a84c"
-                         stroke-width="0.9" fill="none" opacity="0.6"/>
-                <ellipse cx="14" cy="14" rx="7" ry="4.5" stroke="#c9a84c"
-                         stroke-width="0.9" fill="none" opacity="0.6"
-                         transform="rotate(60 14 14)"/>
-                <ellipse cx="14" cy="14" rx="7" ry="4.5" stroke="#c9a84c"
-                         stroke-width="0.9" fill="none" opacity="0.6"
-                         transform="rotate(120 14 14)"/>
-                <circle cx="14" cy="14" r="4.5" fill="rgba(8,12,24,0.95)"
-                        stroke="#c9a84c" stroke-width="0.7"/>
-                <text x="14" y="17.5" text-anchor="middle"
-                      font-family="Cinzel,serif" font-size="5" font-weight="700"
-                      fill="#f0d080">LM</text>
+                <path d="M14 2 L25 7.5 L27 14 L25 20.5 L14 26 L3 20.5 L1 14 L3 7.5 Z" stroke="#c9a84c" stroke-width="0.8" fill="rgba(8,12,24,0.6)" opacity="0.8"/>
+                <ellipse cx="14" cy="14" rx="7" ry="4.5" stroke="#c9a84c" stroke-width="0.9" fill="none" opacity="0.6"/>
+                <ellipse cx="14" cy="14" rx="7" ry="4.5" stroke="#c9a84c" stroke-width="0.9" fill="none" opacity="0.6" transform="rotate(60 14 14)"/>
+                <ellipse cx="14" cy="14" rx="7" ry="4.5" stroke="#c9a84c" stroke-width="0.9" fill="none" opacity="0.6" transform="rotate(120 14 14)"/>
+                <circle cx="14" cy="14" r="4.5" fill="rgba(8,12,24,0.95)" stroke="#c9a84c" stroke-width="0.7"/>
+                <text x="14" y="17.5" text-anchor="middle" font-family="Cinzel,serif" font-size="5" font-weight="700" fill="#f0d080">LM</text>
             </svg>
-
             <div class="brand-bar-text">
                 <span class="brand-bar-name">LiveMemories</span>
                 <span class="brand-bar-sub">AR Photo Album</span>
@@ -845,21 +875,12 @@
         <div id="scan-line"></div>
     </div>
 
-    <!-- ===== دائرة الماسح الدوارة (تظهر وسط الشاشة أثناء البحث) ===== -->
+    <!-- ===== دائرة الماسح الدوارة وسط الشاشة ===== -->
     <div id="scan-circle">
         <svg viewBox="0 0 140 140" fill="none" xmlns="http://www.w3.org/2000/svg" width="170" height="170">
-            <!-- ذنب بعيد -->
-            <circle class="lm-arc-tail" cx="70" cy="70" r="65"
-                    stroke="#c9a84c" stroke-width="4"
-                    stroke-dasharray="35 373" stroke-linecap="round" opacity="0.18"/>
-            <!-- ذنب قريب -->
-            <circle class="lm-arc-mid" cx="70" cy="70" r="65"
-                    stroke="#c9a84c" stroke-width="3"
-                    stroke-dasharray="75 333" stroke-linecap="round" opacity="0.42"/>
-            <!-- الرأس المضيء -->
-            <circle class="lm-arc-main" cx="70" cy="70" r="65"
-                    stroke="#f0d080" stroke-width="2.2"
-                    stroke-dasharray="110 298" stroke-linecap="round" opacity="1"/>
+            <circle class="lm-arc-tail" cx="70" cy="70" r="65" stroke="#c9a84c" stroke-width="4" stroke-dasharray="35 373" stroke-linecap="round" opacity="0.18"/>
+            <circle class="lm-arc-mid" cx="70" cy="70" r="65" stroke="#c9a84c" stroke-width="3" stroke-dasharray="75 333" stroke-linecap="round" opacity="0.42"/>
+            <circle class="lm-arc-main" cx="70" cy="70" r="65" stroke="#f0d080" stroke-width="2.2" stroke-dasharray="110 298" stroke-linecap="round" opacity="1"/>
         </svg>
     </div>
 
@@ -877,7 +898,7 @@
     <!-- ===== إشعار اكتشاف الصورة ===== -->
     <div id="found-toast"></div>
 
-    <!-- ===== الإطار الإرشادي (مخفي حتى تجهز الكاميرا) ===== -->
+    <!-- ===== الإطار الإرشادي ===== -->
     <div id="guide-frame-box" class="hidden">
         <div class="gf-corner tl"></div>
         <div class="gf-corner tr"></div>
@@ -893,19 +914,16 @@
         </div>
     </div>
 
-    <!-- 🚨 [3] زر كتم الصوت (لحذفه، امسح هذا السطر فقط) 🚨 -->
+    <!-- زر كتم الصوت -->
     <button id="mute-btn" class="control-btn">🔊</button>
 
-    <!-- 🚨 [4] زر الفيسبوك (لحذفه، امسح الأسطر الثلاثة التالية) 🚨 -->
-    <a id="facebook-btn" class="control-btn"
-       href="https://www.facebook.com/profile.php?id=61582938020960" target="_blank">
+    <!-- زر الفيسبوك -->
+    <a id="facebook-btn" class="control-btn" href="https://www.facebook.com/profile.php?id=61582938020960" target="_blank">
         🔵 صفحتنا على فيسبوك
     </a>
 
-    <!-- 🚨 [5] زر الواتساب (لحذفه، امسح الأسطر الثلاثة التالية) 🚨 -->
-    <a id="whatsapp-btn" class="control-btn"
-       href="https://wa.me/201096320826?text=السلام%20عليكم%20ورحمة%20الله%20وبركاته%2C%20أود%20الطلب%20والاستفسار%20عن%20ألبوم%20الصور%20التفاعلي"
-       target="_blank">
+    <!-- زر الواتساب -->
+    <a id="whatsapp-btn" class="control-btn" href="https://wa.me/201096320826?text=السلام%20عليكم%20ورحمة%20الله%20وبركاته%2C%20أود%20الطلب%20والاستفسار%20عن%20ألبوم%20الصور%20التفاعلي" target="_blank">
         💬 اطلب ألبومك الخاص
     </a>
 
@@ -926,96 +944,153 @@
         device-orientation-permission-ui="enabled: false">
 
         <a-assets>
-            <!-- 🚨 [6] قائمة الفيديوهات الـ 10 🚨 -->
-            <video id="video-1"  src="./videos/video1.mp4"  preload="auto" loop muted playsinline webkit-playsinline></video>
-            <video id="video-2"  src="./videos/video2.mp4"  preload="auto" loop muted playsinline webkit-playsinline></video>
-            <video id="video-3"  src="./videos/video3.mp4"  preload="auto" loop muted playsinline webkit-playsinline></video>
-            <video id="video-4"  src="./videos/video4.mp4"  preload="auto" loop muted playsinline webkit-playsinline></video>
-            <video id="video-5"  src="./videos/video5.mp4"  preload="auto" loop muted playsinline webkit-playsinline></video>
-            <video id="video-6"  src="./videos/video6.mp4"  preload="auto" loop muted playsinline webkit-playsinline></video>
-            <video id="video-7"  src="./videos/video7.mp4"  preload="auto" loop muted playsinline webkit-playsinline></video>
-            <video id="video-8"  src="./videos/video8.mp4"  preload="auto" loop muted playsinline webkit-playsinline></video>
-            <video id="video-9"  src="./videos/video9.mp4"  preload="auto" loop muted playsinline webkit-playsinline></video>
-            <video id="video-10" src="./videos/video10.mp4" preload="auto" loop muted playsinline webkit-playsinline></video>
+            <!-- برمجة وإدراج قائمة الفيديوهات الـ 20 لتتطابق بدقة مع بنية مجلدات السيرفر المعتمدة (من 01 إلى 20) -->
+            <video id="video-1"  src="./videos/01.mp4" preload="auto" loop muted playsinline webkit-playsinline></video>
+            <video id="video-2"  src="./videos/02.mp4" preload="auto" loop muted playsinline webkit-playsinline></video>
+            <video id="video-3"  src="./videos/03.mp4" preload="auto" loop muted playsinline webkit-playsinline></video>
+            <video id="video-4"  src="./videos/04.mp4" preload="auto" loop muted playsinline webkit-playsinline></video>
+            <video id="video-5"  src="./videos/05.mp4" preload="auto" loop muted playsinline webkit-playsinline></video>
+            <video id="video-6"  src="./videos/06.mp4" preload="auto" loop muted playsinline webkit-playsinline></video>
+            <video id="video-7"  src="./videos/07.mp4" preload="auto" loop muted playsinline webkit-playsinline></video>
+            <video id="video-8"  src="./videos/08.mp4" preload="auto" loop muted playsinline webkit-playsinline></video>
+            <video id="video-9"  src="./videos/09.mp4" preload="auto" loop muted playsinline webkit-playsinline></video>
+            <video id="video-10" src="./videos/10.mp4" preload="auto" loop muted playsinline webkit-playsinline></video>
+            <video id="video-11" src="./videos/11.mp4" preload="auto" loop muted playsinline webkit-playsinline></video>
+            <video id="video-12" src="./videos/12.mp4" preload="auto" loop muted playsinline webkit-playsinline></video>
+            <video id="video-13" src="./videos/13.mp4" preload="auto" loop muted playsinline webkit-playsinline></video>
+            <video id="video-14" src="./videos/14.mp4" preload="auto" loop muted playsinline webkit-playsinline></video>
+            <video id="video-15" src="./videos/15.mp4" preload="auto" loop muted playsinline webkit-playsinline></video>
+            <video id="video-16" src="./videos/16.mp4" preload="auto" loop muted playsinline webkit-playsinline></video>
+            <video id="video-17" src="./videos/17.mp4" preload="auto" loop muted playsinline webkit-playsinline></video>
+            <video id="video-18" src="./videos/18.mp4" preload="auto" loop muted playsinline webkit-playsinline></video>
+            <video id="video-19" src="./videos/19.mp4" preload="auto" loop muted playsinline webkit-playsinline></video>
+            <video id="video-20" src="./videos/20.mp4" preload="auto" loop muted playsinline webkit-playsinline></video>
 
-            <img id="video-frame" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMDAgMjcwIiB3aWR0aD0iMjAwIiBoZWlnaHQ9IjI3MCI+CiAgPHBhdGggZD0iTTIsNTUgTDIsMiBMNTUsMiIgc3Ryb2tlPSIjYzlhODRjIiBzdHJva2Utd2lkdGg9IjMiIGZpbGw9Im5vbmUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgogIDxwYXRoIGQ9Ik05LDQ1IEw5LDkgTDQ1LDkiIHN0cm9rZT0iI2M5YTg0YyIgc3Ryb2tlLXdpZHRoPSIwLjkiIGZpbGw9Im5vbmUiIG9wYWNpdHk9IjAuNTUiLz4KICA8Y2lyY2xlIGN4PSIyIiBjeT0iMiIgcj0iMy41IiBmaWxsPSIjYzlhODRjIi8+CiAgPHBvbHlnb24gcG9pbnRzPSIyMiwyIDI2LDYgMjIsMTAgMTgsNiIgZmlsbD0iI2M5YTg0YyIgb3BhY2l0eT0iMC43Ii8+CiAgPHBhdGggZD0iTTE5OCw1NSBMMTk4LDIgTDE0NSwyIiBzdHJva2U9IiNjOWE4NGMiIHN0cm9rZS13aWR0aD0iMyIgZmlsbD0ibm9uZSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+CiAgPHBhdGggZD0iTTE5MSw0NSBMMTkxLDkgTDE1NSw5IiBzdHJva2U9IiNjOWE4NGMiIHN0cm9rZS13aWR0aD0iMC45IiBmaWxsPSJub25lIiBvcGFjaXR5PSIwLjU1Ii8+CiAgPGNpcmNsZSBjeD0iMTk4IiBjeT0iMiIgcj0iMy41IiBmaWxsPSIjYzlhODRjIi8+CiAgPHBvbHlnb24gcG9pbnRzPSIxNzgsMiAxODIsNiAxNzgsMTAgMTc0LDYiIGZpbGw9IiNjOWE4NGMiIG9wYWNpdHk9IjAuNyIvPgogIDxwYXRoIGQ9Ik0yLDIxNSBMMiwyNjggTDU1LDI2OCIgc3Ryb2tlPSIjYzlhODRjIiBzdHJva2Utd2lkdGg9IjMiIGZpbGw9Im5vbmUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgogIDxwYXRoIGQ9Ik05LDIyNSBMOSwyNjEgTDQ1LDI2MSIgc3Ryb2tlPSIjYzlhODRjIiBzdHJva2Utd2lkdGg9IjAuOSIgZmlsbD0ibm9uZSIgb3BhY2l0eT0iMC41NSIvPgogIDxjaXJjbGUgY3g9IjIiIGN5PSIyNjgiIHI9IjMuNSIgZmlsbD0iI2M5YTg0YyIvPgogIDxwb2x5Z29uIHBvaW50cz0iMjIsMjY4IDI2LDI2NCAyMiwyNjAgMTgsMjY0IiBmaWxsPSIjYzlhODRjIiBvcGFjaXR5PSIwLjciLz4KICA8cGF0aCBkPSJNMTk4LDIxNSBMMTk4LDI2OCBMMTQ1LDI2OCIgc3Ryb2tlPSIjYzlhODRjIiBzdHJva2Utd2lkdGg9IjMiIGZpbGw9Im5vbmUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgogIDxwYXRoIGQ9Ik0xOTEsMjI1IEwxOTEsMjYxIEwxNTUsMjYxIiBzdHJva2U9IiNjOWE4NGMiIHN0cm9rZS13aWR0aD0iMC45IiBmaWxsPSJub25lIiBvcGFjaXR5PSIwLjU1Ii8+CiAgPGNpcmNsZSBjeD0iMTk4IiBjeT0iMjY4IiByPSIzLjUiIGZpbGw9IiNjOWE4NGMiLz4KICA8cG9seWdvbiBwb2ludHM9IjE3OCwyNjggMTgyLDI2NCAxNzgsMjYwIDE3NCwyNjQiIGZpbGw9IiNjOWE4NGMiIG9wYWNpdHk9IjAuNyIvPgogIDxwb2x5Z29uIHBvaW50cz0iMTAwLDEgMTA0LDUgMTAwLDkgOTYsNSIgZmlsbD0iI2M5YTg0YyIgb3BhY2l0eT0iMC44NSIvPgogIDxwb2x5Z29uIHBvaW50cz0iMTAwLDI2OSAxMDQsMjY1IDEwMCwyNjEgOTYsMjY1IiBmaWxsPSIjYzlhODRjIiBvcGFjaXR5PSIwLjg1Ii8+CiAgPHBvbHlnb24gcG9pbnRzPSIxLDEzNSA1LDEzMSA5LDEzNSA1LDEzOSIgZmlsbD0iI2M5YTg0YyIgb3BhY2l0eT0iMC44NSIvPgogIDxwb2x5Z29uIHBvaW50cz0iMTk5LDEzNSAxOTUsMTMxIDE5MSwxMzUgMTk1LDEzOSIgZmlsbD0iI2M5YTg0YyIgb3BhY2l0eT0iMC44NSIvPgogIDxsaW5lIHgxPSIyIiB5MT0iNzAiIHgyPSIyIiB5Mj0iMTIwIiBzdHJva2U9IiNjOWE4NGMiIHN0cm9rZS13aWR0aD0iMC42IiBvcGFjaXR5PSIwLjI1Ii8+CiAgPGxpbmUgeDE9IjIiIHkxPSIxNTAiIHgyPSIyIiB5Mj0iMjAwIiBzdHJva2U9IiNjOWE4NGMiIHN0cm9rZS13aWR0aD0iMC42IiBvcGFjaXR5PSIwLjI1Ii8+CiAgPGxpbmUgeDE9IjE5OCIgeTE9IjcwIiB4Mj0iMTk4IiB5Mj0iMTIwIiBzdHJva2U9IiNjOWE4NGMiIHN0cm9rZS13aWR0aD0iMC42IiBvcGFjaXR5PSIwLjI1Ii8+CiAgPGxpbmUgeDE9IjE5OCIgeTE9IjE1MCIgeDI9IjE5OCIgeTI9IjIwMCIgc3Ryb2tlPSIjYzlhODRjIiBzdHJva2Utd2lkdGg9IjAuNiIgb3BhY2l0eT0iMC4yNSIvPgogIDxsaW5lIHgxPSI3MCIgeTE9IjIiIHgyPSI5MCIgeTI9IjIiIHN0cm9rZT0iI2M5YTg0YyIgc3Ryb2tlLXdpZHRoPSIwLjYiIG9wYWNpdHk9IjAuMjUiLz4KICA8bGluZSB4MT0iMTEwIiB5MT0iMiIgeDI9IjEzMCIgeTI9IjIiIHN0cm9rZT0iI2M5YTg0YyIgc3Ryb2tlLXdpZHRoPSIwLjYiIG9wYWNpdHk9IjAuMjUiLz4KICA8bGluZSB4MT0iNzAiIHkxPSIyNjgiIHgyPSI5MCIgeTI9IjI2OCIgc3Ryb2tlPSIjYzlhODRjIiBzdHJva2Utd2lkdGg9IjAuNiIgb3BhY2l0eT0iMC4yNSIvPgogIDxsaW5lIHgxPSIxMTAiIHkxPSIyNjgiIHgyPSIxMzAiIHkyPSIyNjgiIHN0cm9rZT0iI2M5YTg0YyIgc3Ryb2tlLXdpZHRoPSIwLjYiIG9wYWNpdHk9IjAuMjUiLz4KPC9zdmc+" crossorigin="anonymous">
-            <audio id="bg-music" src="./music.mp3" preload="auto" loop crossorigin="anonymous"></audio>
+            <!-- الإطار الزخرفي المذهب المتوهج المعتمد للـ AR فوق الفيديو -->
+            <img id="video-frame" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMDAgMjcwIiB3aWR0aD0iMjAwIiBoZWlnaHQ9IjI3MCI+CiAgPHBhdGggZD0iTTIsNTUgTDIsMiBMNTUsMiIgc3Ryb2tlPSIjYzlhODRjIiBzdHJva2Utd2lkdGg9IjMiIGZpbGw9Im5vbmUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgogIDxwYXRoIGQ9Ik05LDQ1IEw5LDkgTDQ1LDkiIHN0cm9rZT0iI2M5YTg0YyIgc3Ryb2tlLXdpZHRoPSIwLjkiIGZpbGw9Im5vbmUiIG9wYWNpdHk9IjAuNTUiLz4KICA8Y2lyY2xlIGN4PSIyIiBjeT0iMiIgcj0iMy41IiBmaWxsPSIjYzlhODRjIi8+CiAgPHBvbHlnb24gcG9pbnRzPSIyMiwyIDI2LDYgMjIsMTAgMTgsNiIgZmlsbD0iI2M5YTg0YyIgb3BhY2l0eT0iMC43Ii8+CiAgPHBhdGggZD0iTTE5OCw1NSBMMTk4LDIgTDE0NSwyIiBzdHJva2U9IiNjOWE4NGMiIHN0cm9rZS13aWR0aD0iMyIgZmlsbD0ibm9uZSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+CiAgPHBhdGggZD0iTTE5MSw0NSBMMTkxLDkgTDE1NSw5IiBzdHJva2U9IiNjOWE4NGMiIHN0cm9rZS13aWR0aD0iMC45IiBmaWxsPSJub25lIiBvcGFjaXR5PSIwLjU1Ii8+CiAgPGNpcmNsZSBjeD0iMTk4IiBjeT0iMiIgcj0iMy41IiBmaWxsPSIjYzlhODRjIi8+CiAgPHBvbHlnb24gcG9pbnRzPSIxNzgsMiAxODIsNiAxNzgsMTAgMTh0LDYiIGZpbGw9IiNjOWE4NGMiIG9wYWNpdHk9IjAuNyIvPgogIDxwYXRoIGQ9Ik0yLDIxNSBMMiwyNjggTDU1LDI2OCIgc3Ryb2tlPSIjYzlhODRjIiBzdHJva2Utd2lkdGg9IjMiIGZpbGw9Im5vbmUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgogIDxwYXRoIGQ9Ik05LDIyNSBMOSwyNjEgTDQ1LDI2MSIgc3Ryb2tlPSIjYzlhODRjIiBzdHJva2Utd2lkdGg9IjAuOSIgZmlsbD0ibm9uZSIgb3BhY2l0eT0iMC41NSIvPgogIDxjaXJjbGUgY3g9IjIiIGN5PSIyNjgiIHI9IjMuNSIgZmlsbD0iI2M5YTg0YyIvPgogIDxwb2x5Z29uIHBvaW50cz0iMjIsMjY4IDI2LDI2NCAyMiwyNjAgMTgsMjY0IiBmaWxsPSIjYzlhODRjIiBvcGFjaXR5PSIwLjciLz4KICA8cGF0aCBkPSJNMTk4LDIxNSBMMTk4LDI2OCBMMTQ1LDI2OCIgc3Ryb2tlPSIjYzlhODRjIiBzdHJva2Utd2lkdGg9IjMiIGZpbGw9Im5vbmUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgogIDxwYXRoIGQ9Ik0xOTEsMjI1IEwxOTEsMjYxIEwxNTUsMjYxIiBzdHJva2U9IiNjOWE4NGMiIHN0cm9rZS13aWR0aD0iMC45IiBmaWxsPSJub25lIiBvcGFjaXR5PSIwLjU1Ii8+CiAgPGNpcmNsZSBjeD0iMTk4IiBjeT0iMjY4IiByPSIzLjUiIGZpbGw9IiNjOWE4NGMiLz4KICA8cG9seWdvbiBwb2ludHM9IjE3OCwyNjggMTgyLDI2NCAyNzgsMjYwIDE3NCwyNjQiIGZpbGw9IiNjOWE4NGMiIG9wYWNpdHk9IjAuNyIvPgogIDxwb2x5Z29uIHBvaW50cz0iMTAwLDEgMTA0LDUgMTAwLDkgOTYsNSIgZmlsbD0iI2M5YTg0YyIgb3BhY2l0eT0iMC44NSIvPgogIDxwb2x5Z29uIHBvaW50cz0iMTAwLDI2OSAxMDQsMjY1IDEwMCwyNjEgOTYsMjY1IiBmaWxsPSIjYzlhODRjIiBvcGFjaXR5PSIwLjg1Ii8+CiAgPHBvbHlnb24gcG9pbnRzPSIxLDEzNSA1LDEzMSA5LDEzNSA1LDEzOSIgZmlsbD0iI2M5YTg0YyIgb3BhY2l0eT0iMC44NSIvPgogIDxwb2x5Z29uIHBvaW50cz0iMTk5LDEzNSAxOTUsMTMxIDE5MSwxMzUgMTk1LDEzOSIgZmlsbD0iI2M5YTg0YyIgb3BhY2l0eT0iMC44NSIvPgogIDxsaW5lIHgxPSIyIiB5MT0iNzAiIHgyPSIyIiB5Mj0iMTIwIiBzdHJva2U9IiNjOWE4NGMiIHN0cm9rZS13aWR0aD0iMC42IiBvcGFjaXR5PSIwLjI1Ii8+CiAgPGxpbmUgeDE9IjIiIHkxPSIxNTAiIHgyPSIyIiB5Mj0iMjAwIiBzdHJva2U9IiNjOWE4NGMiIHN0cm9rZS13aWR0aD0iMC42IiBvcGFjaXR5PSIwLjI1Ii8+CiAgPGxpbmUgeDE9IjE5OCIgeTE9IjcwIiB4Mj0iMTk4IiB5Mj0iMTIwIiBzdHJva2U9IiNjOWE4NGMiIHN0cm9rZS13aWR0aD0iMC42IiBvcGFjaXR5PSIwLjI1Ii8+CiAgPGxpbmUgeDE9IjE5OCIgeTE9IjE1MCIgeDI9IjE5OCIgeTI9IjIwMCIgc3Ryb2tlPSIjYzlhODRjIiBzdHJva2Utd2lkdGg9IjAuNiIgb3BhY2l0eT0iMC4yNSIvPgogIDxsaW5lIHgxPSI3MCIgeTE9IjIiIHgyPSI5MCIgeTI9IjIiIHN0cm9rZT0iI2M5YTg0YyIgc3Ryb2tlLXdpZHRoPSIwLjYiIG9wYWNpdHk9IjAuMjUiLz4KICA8bGluZSB4MT0iMTEwIiB5MT0iMiIgeDI9IjEzMCIgeTI9IjIiIHN0cm9rZT0iI2M5YTg0YyIgc3Ryb2tlLXdpZHRoPSIwLjYiIG9wYWNpdHk9IjAuMjUiLz4KICA8bGluZSB4MT0iNzAiIHkxPSIyNjgiIHgyPSI5MCIgeTI9IjI2OCIgc3Ryb2tlPSIjYzlhODRjIiBzdHJva2Utd2lkdGg9IjAuNiIgb3BhY2l0eT0iMC4yNSIvPgogIDxsaW5lIHgxPSIxMTAiIHkxPSIyNjgiIHgyPSIxMzAiIHkyPSIyNjgiIHN0cm9rZT0iI2M5YTg0YyIgc3Ryb2tlLXdpZHRoPSIwLjYiIG9wYWNpdHk9IjAuMjUiLz4KPC9zdmc+" crossorigin="anonymous">
         </a-assets>
 
         <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-        <!-- 🚨 [7] ربط الفيديوهات بالصور 🚨 -->
-        <!--
-          ✏️  كيف تضبط الـ height لكل صورة:
-              افتح صورتك → شوف الأبعاد (مثلاً 1080×1440 بكسل)
-              اقسم الارتفاع على العرض: 1440 ÷ 1080 = 1.333
-              ضع الناتج في height="1.333"
-
-          أمثلة شائعة:
-          ✦ صورة 10×15 سم (portrait)  → height="1.5"
-          ✦ صورة 10×13 سم             → height="1.3"
-          ✦ صورة مربعة 10×10          → height="1.0"
-          ✦ بكسل 1080×1350            → height="1.25"
-          ✦ بكسل 1080×1920 (ريلز)    → height="1.778"
-        -->
-
+        <!-- ربط تلقائي تفاعلي ذكي لـ 20 هدف تفاعلي بـ 20 ملف صوتي وفيسبوك وواتساب -->
+        
         <!-- الصورة الأولى (ترتيب 0) -->
-        <a-entity mindar-image-target="targetIndex: 0" video-controller="video: #video-1">
+        <a-entity mindar-image-target="targetIndex: 0" video-controller="video: #video-1; pageNum: '01'">
             <a-video src="#video-1" width="1" height="1.35" position="0 0 0.001" rotation="0 0 0"></a-video>
             <a-image src="#video-frame" width="1" height="1.35" position="0 0 0.002" material="transparent: true; alphaTest: 0.01; shader: flat"></a-image>
         </a-entity>
 
         <!-- الصورة الثانية (ترتيب 1) -->
-        <a-entity mindar-image-target="targetIndex: 1" video-controller="video: #video-2">
+        <a-entity mindar-image-target="targetIndex: 1" video-controller="video: #video-2; pageNum: '02'">
             <a-video src="#video-2" width="1" height="1.35" position="0 0 0.001" rotation="0 0 0"></a-video>
             <a-image src="#video-frame" width="1" height="1.35" position="0 0 0.002" material="transparent: true; alphaTest: 0.01; shader: flat"></a-image>
         </a-entity>
 
-        <!-- الصورة الثالثة (ترتيب 2) — ✅ تم تصحيح: كانت تعرض video-4 بدلاً من video-3 -->
-        <a-entity mindar-image-target="targetIndex: 2" video-controller="video: #video-3">
+        <!-- الصورة الثالثة (ترتيب 2) -->
+        <a-entity mindar-image-target="targetIndex: 2" video-controller="video: #video-3; pageNum: '03'">
             <a-video src="#video-3" width="1" height="1.35" position="0 0 0.001" rotation="0 0 0"></a-video>
             <a-image src="#video-frame" width="1" height="1.35" position="0 0 0.002" material="transparent: true; alphaTest: 0.01; shader: flat"></a-image>
         </a-entity>
 
         <!-- الصورة الرابعة (ترتيب 3) -->
-        <a-entity mindar-image-target="targetIndex: 3" video-controller="video: #video-4">
+        <a-entity mindar-image-target="targetIndex: 3" video-controller="video: #video-4; pageNum: '04'">
             <a-video src="#video-4" width="1" height="1.35" position="0 0 0.001" rotation="0 0 0"></a-video>
             <a-image src="#video-frame" width="1" height="1.35" position="0 0 0.002" material="transparent: true; alphaTest: 0.01; shader: flat"></a-image>
         </a-entity>
 
         <!-- الصورة الخامسة (ترتيب 4) -->
-        <a-entity mindar-image-target="targetIndex: 4" video-controller="video: #video-5">
+        <a-entity mindar-image-target="targetIndex: 4" video-controller="video: #video-5; pageNum: '05'">
             <a-video src="#video-5" width="1" height="1.35" position="0 0 0.001" rotation="0 0 0"></a-video>
             <a-image src="#video-frame" width="1" height="1.35" position="0 0 0.002" material="transparent: true; alphaTest: 0.01; shader: flat"></a-image>
         </a-entity>
 
         <!-- الصورة السادسة (ترتيب 5) -->
-        <a-entity mindar-image-target="targetIndex: 5" video-controller="video: #video-6">
+        <a-entity mindar-image-target="targetIndex: 5" video-controller="video: #video-6; pageNum: '06'">
             <a-video src="#video-6" width="1" height="1.35" position="0 0 0.001" rotation="0 0 0"></a-video>
             <a-image src="#video-frame" width="1" height="1.35" position="0 0 0.002" material="transparent: true; alphaTest: 0.01; shader: flat"></a-image>
         </a-entity>
 
         <!-- الصورة السابعة (ترتيب 6) -->
-        <a-entity mindar-image-target="targetIndex: 6" video-controller="video: #video-7">
+        <a-entity mindar-image-target="targetIndex: 6" video-controller="video: #video-7; pageNum: '07'">
             <a-video src="#video-7" width="1" height="1.35" position="0 0 0.001" rotation="0 0 0"></a-video>
             <a-image src="#video-frame" width="1" height="1.35" position="0 0 0.002" material="transparent: true; alphaTest: 0.01; shader: flat"></a-image>
         </a-entity>
 
         <!-- الصورة الثامنة (ترتيب 7) -->
-        <a-entity mindar-image-target="targetIndex: 7" video-controller="video: #video-8">
+        <a-entity mindar-image-target="targetIndex: 7" video-controller="video: #video-8; pageNum: '08'">
             <a-video src="#video-8" width="1" height="1.35" position="0 0 0.001" rotation="0 0 0"></a-video>
             <a-image src="#video-frame" width="1" height="1.35" position="0 0 0.002" material="transparent: true; alphaTest: 0.01; shader: flat"></a-image>
         </a-entity>
 
         <!-- الصورة التاسعة (ترتيب 8) -->
-        <a-entity mindar-image-target="targetIndex: 8" video-controller="video: #video-9">
+        <a-entity mindar-image-target="targetIndex: 8" video-controller="video: #video-9; pageNum: '09'">
             <a-video src="#video-9" width="1" height="1.35" position="0 0 0.001" rotation="0 0 0"></a-video>
             <a-image src="#video-frame" width="1" height="1.35" position="0 0 0.002" material="transparent: true; alphaTest: 0.01; shader: flat"></a-image>
         </a-entity>
 
         <!-- الصورة العاشرة (ترتيب 9) -->
-        <a-entity mindar-image-target="targetIndex: 9" video-controller="video: #video-10">
+        <a-entity mindar-image-target="targetIndex: 9" video-controller="video: #video-10; pageNum: '10'">
             <a-video src="#video-10" width="1" height="1.35" position="0 0 0.001" rotation="0 0 0"></a-video>
+            <a-image src="#video-frame" width="1" height="1.35" position="0 0 0.002" material="transparent: true; alphaTest: 0.01; shader: flat"></a-image>
+        </a-entity>
+
+        <!-- الصورة الحادية عشر (ترتيب 10) -->
+        <a-entity mindar-image-target="targetIndex: 10" video-controller="video: #video-11; pageNum: '11'">
+            <a-video src="#video-11" width="1" height="1.35" position="0 0 0.001" rotation="0 0 0"></a-video>
+            <a-image src="#video-frame" width="1" height="1.35" position="0 0 0.002" material="transparent: true; alphaTest: 0.01; shader: flat"></a-image>
+        </a-entity>
+
+        <!-- الصورة الثانية عشر (ترتيب 11) -->
+        <a-entity mindar-image-target="targetIndex: 11" video-controller="video: #video-12; pageNum: '12'">
+            <a-video src="#video-12" width="1" height="1.35" position="0 0 0.001" rotation="0 0 0"></a-video>
+            <a-image src="#video-frame" width="1" height="1.35" position="0 0 0.002" material="transparent: true; alphaTest: 0.01; shader: flat"></a-image>
+        </a-entity>
+
+        <!-- الصورة الثالثة عشر (ترتيب 12) -->
+        <a-entity mindar-image-target="targetIndex: 12" video-controller="video: #video-13; pageNum: '13'">
+            <a-video src="#video-13" width="1" height="1.35" position="0 0 0.001" rotation="0 0 0"></a-video>
+            <a-image src="#video-frame" width="1" height="1.35" position="0 0 0.002" material="transparent: true; alphaTest: 0.01; shader: flat"></a-image>
+        </a-entity>
+
+        <!-- الصورة الرابعة عشر (ترتيب 13) -->
+        <a-entity mindar-image-target="targetIndex: 13" video-controller="video: #video-14; pageNum: '14'">
+            <a-video src="#video-14" width="1" height="1.35" position="0 0 0.001" rotation="0 0 0"></a-video>
+            <a-image src="#video-frame" width="1" height="1.35" position="0 0 0.002" material="transparent: true; alphaTest: 0.01; shader: flat"></a-image>
+        </a-entity>
+
+        <!-- الصورة الخامسة عشر (ترتيب 14) -->
+        <a-entity mindar-image-target="targetIndex: 14" video-controller="video: #video-15; pageNum: '15'">
+            <a-video src="#video-15" width="1" height="1.35" position="0 0 0.001" rotation="0 0 0"></a-video>
+            <a-image src="#video-frame" width="1" height="1.35" position="0 0 0.002" material="transparent: true; alphaTest: 0.01; shader: flat"></a-image>
+        </a-entity>
+
+        <!-- الصورة السادسة عشر (ترتيب 15) -->
+        <a-entity mindar-image-target="targetIndex: 15" video-controller="video: #video-16; pageNum: '16'">
+            <a-video src="#video-16" width="1" height="1.35" position="0 0 0.001" rotation="0 0 0"></a-video>
+            <a-image src="#video-frame" width="1" height="1.35" position="0 0 0.002" material="transparent: true; alphaTest: 0.01; shader: flat"></a-image>
+        </a-entity>
+
+        <!-- الصورة السابعة عشر (ترتيب 16) -->
+        <a-entity mindar-image-target="targetIndex: 16" video-controller="video: #video-17; pageNum: '17'">
+            <a-video src="#video-17" width="1" height="1.35" position="0 0 0.001" rotation="0 0 0"></a-video>
+            <a-image src="#video-frame" width="1" height="1.35" position="0 0 0.002" material="transparent: true; alphaTest: 0.01; shader: flat"></a-image>
+        </a-entity>
+
+        <!-- الصورة الثامنة عشر (ترتيب 17) -->
+        <a-entity mindar-image-target="targetIndex: 17" video-controller="video: #video-18; pageNum: '18'">
+            <a-video src="#video-18" width="1" height="1.35" position="0 0 0.001" rotation="0 0 0"></a-video>
+            <a-image src="#video-frame" width="1" height="1.35" position="0 0 0.002" material="transparent: true; alphaTest: 0.01; shader: flat"></a-image>
+        </a-entity>
+
+        <!-- الصورة التاسعة عشر (ترتيب 18) -->
+        <a-entity mindar-image-target="targetIndex: 18" video-controller="video: #video-19; pageNum: '19'">
+            <a-video src="#video-19" width="1" height="1.35" position="0 0 0.001" rotation="0 0 0"></a-video>
+            <a-image src="#video-frame" width="1" height="1.35" position="0 0 0.002" material="transparent: true; alphaTest: 0.01; shader: flat"></a-image>
+        </a-entity>
+
+        <!-- الصورة العشرين (ترتيب 19) -->
+        <a-entity mindar-image-target="targetIndex: 19" video-controller="video: #video-20; pageNum: '20'">
+            <a-video src="#video-20" width="1" height="1.35" position="0 0 0.001" rotation="0 0 0"></a-video>
             <a-image src="#video-frame" width="1" height="1.35" position="0 0 0.002" material="transparent: true; alphaTest: 0.01; shader: flat"></a-image>
         </a-entity>
 
