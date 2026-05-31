@@ -459,7 +459,7 @@
             50% { opacity: 0.4; transform: scale(0.6); }
         }
 
-        /* ====== مؤشر حالة الاستهداف (أعلى اليسار) ====== */
+        /* ====== مؤشر حالة الاستهداف ====== */
         #status-badge {
             position: fixed;
             top: 110px;
@@ -606,10 +606,10 @@
 
     <script>
         let isTargetActive = false;
-        let muteBtnState = false; // false تعني تشغيل الصوت، true تعني كتم الصوت
+        let muteBtnState = false; // false الصوت يعمل، true مكتوم
         let toastTimer = null;
 
-        // لتتبع تشغيل الفيديو والصوت النشطين حالياً
+        // لتتبع الفيديوهات والملفات الصوتية النشطة
         let activeVideo = null;
         let activeAudio = null;
 
@@ -622,7 +622,7 @@
             toastTimer = setTimeout(() => toast.classList.remove('show'), 2500);
         }
 
-        // كود معالج الـ AR المطور والمثالي لتشغيل الفيديو وموسيقى الخلفية الموحدة بالتزامن [1, 4]
+        // معالج الـ AR الذكي والمطور لتشغيل الفيديو والموسيقى مع إخفاء الإرشادات فوراً وبشكل دائم أثناء العرض [1, 4]
         AFRAME.registerComponent('video-controller', {
             schema: { 
                 video: { type: 'selector' }
@@ -640,32 +640,26 @@
                 target.addEventListener('targetFound', () => {
                     isTargetActive = true;
                     activeVideo = video;
-                    activeAudio = music; // الموسيقى الموحدة هي الصوت التفاعلي النشط [1]
+                    activeAudio = music; 
 
-                    // تفعيل تأثيرات التتبع الجمالية
+                    // تفعيل تأثيرات التتبع وتغيير حالة المؤشر للـ "جارٍ العرض"
                     frame && frame.classList.add('found');
                     status && status.classList.add('active');
                     if (status) status.querySelector('.status-label').textContent = 'جارٍ العرض';
+                    
+                    // إخفاء العبارة الإرشادية والإطارات الدائرية فوراً وبصمت تام تلبية لطلبك لجعل المشهد نظيفاً
                     instr && instr.classList.add('hidden');
                     scanCircle && scanCircle.classList.add('hidden');
                     guideFrame && guideFrame.classList.add('hidden');
                     showToast('✦ تم اكتشاف الصورة');
 
-                    // تشغيل الفيديو صامتاً لتجنب قيود المتصفحات [4]
+                    // تشغيل الفيديو صامتاً في الخلفية [4]
                     video.muted = true;
                     video.play().catch(e => console.log(e));
 
-                    // تشغيل الموسيقى الموحدة music.mp3 المرفوعة في مجلدك [1]
-                    music.muted = muteBtnState; // يتبع زر كتم الصوت العام
-                    music.play()
-                        .then(() => instr && instr.classList.add('hidden'))
-                        .catch(() => {
-                            // إرشاد المستخدم للنقر في حال حظر المتصفح التشغيل التلقائي للصوت
-                            if (!muteBtnState && instr) {
-                                instr.innerHTML = '<span class="inst-dot"></span> اضغط على الشاشة لتفعيل الصوت';
-                                instr.classList.remove('hidden');
-                            }
-                        });
+                    // تشغيل الموسيقى الموحدة تلقائياً ومباشرة دون شروط أو نصوص لمس [1]
+                    music.muted = muteBtnState; 
+                    music.play().catch(e => console.log(e));
                 });
 
                 target.addEventListener('targetLost', () => {
@@ -725,7 +719,7 @@
             setTimeout(onCameraReady, 5000);
             setTimeout(hideLoader, 7000);
 
-            /* ---- زر كتم وتشغيل الصوت العام الموحد ---- */
+            /* ---- زر كتم الصوت الموحد ---- */
             muteBtn.addEventListener('click', e => {
                 e.stopPropagation();
                 muteBtnState = !muteBtnState;
@@ -737,7 +731,7 @@
                 }
             });
 
-            /* ---- لمس الشاشة العام لفك حظر متصفحات الهاتف وتشغيل الصوت ---- */
+            /* ---- لمس الشاشة العام (احتياطي فقط) ---- */
             document.body.addEventListener('click', () => {
                 if (isTargetActive && !muteBtnState && activeAudio) {
                     if (activeAudio.paused) {
@@ -907,7 +901,7 @@
             <video id="video-20" src="./videos/video20.mp4" preload="auto" loop muted playsinline webkit-playsinline></video>
 
             <!-- الإطار الزخرفي المذهب المعتمد للـ AR فوق الفيديو -->
-            <img id="video-frame" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMDAgMjcwIiB3aWR0aD0iMjAwIiBoZWlnaHQ9IjI3MCI+CiAgPHBhdGggZD0iTTIsNTUgTDIsMiBMNTUsMiIgc3Ryb2tlPSIjYzlhODRjIiBzdHJva2Utd2lkdGg9IjMiIGZpbGw9Im5vbmUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgogIDxwYXRoIGQ9Ik05LDQ1IEw5LDkgTDQ1LDkiIHN0cm9rZT0iI2M5YTg0YyIgc3Ryb2tlLXdpZHRoPSIwLjkiIGZpbGw9Im5vbmUiIG9wYWNpdHk9IjAuNTUiLz4KICA8Y2lyY2xlIGN4PSIyIiBjeT0iMiIgcj0iMy41IiBmaWxsPSIjYzlhODRjIi8+CiAgPHBvbHlnb24gcG9pbnRzPSIyMiwyIDI2LDYgMjIsMTAgMTgsNiIgZmlsbD0iI2M5YTg0YyIgb3BhY2l0eT0iMC43Ii8+CiAgPHBhdGggZD0iTTE5OCw1NSBMMTk4LDIgTDE0NSwyIiBzdHJva2U9IiNjOWE4NGMiIHN0cm9rZS13aWR0aD0iMyIgZmlsbD0ibm9uZSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+CiAgPHBhdGggZD0iTTE5MSw0NSBMMTkxLDkgTDE1NSw5IiBzdHJva2U9IiNjOWE4NGMiIHN0cm9rZS13aWR0aD0iMC45IiBmaWxsPSJub25lIiBvcGFjaXR5PSIwLjU1Ii8+CiAgPGNpcmNsZSBjeD0iMTk4IiBjeT0iMiIgcj0iMy41IiBmaWxsPSIjYzlhODRjIi8+CiAgPHBvbHlnb24gcG9pbnRzPSIxNzgsMiAxODIsNiAxNzgsMTAgMTc0LDYiIGZpbGw9IiNjOWE4NGMiIG9wYWNpdHk9IjAuNyIvPgogIDxwYXRoIGQ9Ik0yLDIxNSBMMiwyNjggTDU1LDI2OCIgc3Ryb2tlPSIjYzlhODRjIiBzdHJva2Utd2lkdGg9IjMiIGZpbGw9Im5vbmUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgogIDxwYXRoIGQ9Ik05LDIyNSBMOSwyNjEgTDQ1LDI2MSIgc3Ryb2tlPSIjYzlhODRjIiBzdHJva2Utd2lkdGg9IjAuOSIgZmlsbD0ibm9uZSIgb3BhY2l0eT0iMC41YSIvPgogIDxjaXJjbGUgY3g9IjIiIGN5PSIyNjgiIHI9IjMuNSIgZmlsbD0iI2M5YTg0YyIvPgogIDxwb2x5Z29uIHBvaW50cz0iMjIsMjY4IDI2LDI2NCAyMiwyNjAgMTgsMjY0IiBmaWxsPSIjYzlhODRjIiBvcGFjaXR5PSIwLjciLz4KICA8cGF0aCBkPSJNMTk4LDIxNSBMMTk4LDI2OCBMMTQ1LDI2OCIgc3Ryb2tlPSIjYzlhODRjIiBzdHJva2Utd2lkdGg9IjMiIGZpbGw9Im5vbmUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgogIDxwYXRoIGQ9Ik0xOTEsMjI1IEwxOTEsMjYxIEwxNTUsMjYxIiBzdHJva2U9IiNjOWE4NGMiIHN0cm9rZS13aWR0aD0iMC45IiBmaWxsPSJub25lIiBvcGFjaXR5PSIwLjU1Ii8+CiAgPGNpcmNsZSBjeD0iMTk4IiBjeT0iMjY4IiByPSIzLjUiIGZpbGw9IiNjOWE4NGMiLz4KICA8cG9seWdvbiBwb2ludHM9IjE3OCwyNjggMTgyLDI2NCAxNzgsMjYwIDE3NCwyNjQiIGZpbGw9IiNjOWE4NGMiIG9wYWNpdHk9IjAuNyIvPgogIDwbG9seWdvbiBwb2ludHM9IjEwMCwxIDEwNCw1IDEwMCw5IDk2LDUiIGZpbGw9IiNjOWE4NGMiIG9wYWNpdHk9IjAuODUiLz4KICA8cG9seWdvbiBwb2ludHM9IjEwMCwyNjkgMTA0LDI2NSIDEwMCwyNjEgOTYsMjY1IiBmaWxsPSIjYzlhODRjIiBvcGFjaXR5PSIwLjg1Ii8+CiAgPHBvbHlnb24gcG9pbnRzPSIxLDEzNSA1LDEzMSA5LDEzNSA1LDEzOSIgZmlsbD0iI2M5YTg0YyIgb3BhY2l0eT0iMC44NSIvPgogIDxwYXRoIGQ9Ik0xOTksMTM1IEwxOTUsMTMxIEwxOTEsMTM1IEwxOTUsMTM5IiBmaWxsPSIjYzlhODRjIiBvcGFjaXR5PSIwLjg1Ii8+CiAgPGxpbmUgeDE9IjIiIHkxPSI3MCIgeDI9IjIiIHkyPSIxMjAiIHN0cm9rZT0iI2M5YTg0YyIgc3Ryb2tlLXdpZHRoPSIwLjYiIG9wYWNpdHk9IjAuMjUiLz4KICA8bGluZSB4MT0iIiB5MT0iMTEwIiB4Mj0iIiB5Mj0iMjAwIiBzdHJva2U9IiNjOWE4NGMiIHN0cm9rZS13aWR0aD0iMC42IiBvcGFjaXR5PSIwLjI1Ii8+CiAgPGxpbmUgeDE9IjE5OCIgeTE9IjcwIiB4Mj0iMTk4IiB5Mj0iMTIwIiBzdHJva2U9IiNjOWE4NGMiIHN0cm9rZS13aWR0aD0iMC42IiBvcGFjaXR5PSIwLjI1Ii8+CiAgPGxpbmUgeDE9IjE5OCIgeTE9IjE1MCIgeDI9IjE5OCIgeTI9IjIwMCIgc3Ryb2tlPSIjYzlhODRjIiBzdHJva2Utd2lkdGg9IjAuNiIgb3BhY2l0eT0iMC4yNSIvPgogIDxsaW5lIHgxPSI3MCIgeTE9IjIiIHgyPSI5MCIgeTI9IjIiIHN0cm9rZT0iI2M5YTg0YyIgc3Ryb2tlLXdpZHRoPSIwLjYiIG9wYWNpdHk9IjAuMjUiLz4KICA8bGluZSB4MT0iMTEwIiB5MT0iMiIgeDI9IjEzMCIgeTI9IjIiIHN0cm9rZT0iI2M5YTg0YyIgc3Ryb2tlLXdpZHRoPSIwLjYiIG9wYWNpdHk9IjAuMjUiLz4KICA8bGluZSB4MT0iNzAiIHkxPSIyNjgiIHgyPSI5MCIgeTI9IjI2OCIgc3Ryb2tlPSIjYzlhODRjIiBzdHJva2Utd2lkdGg9IjAuNiIgb3BhY2l0eT0iMC4yNSIvPgogIDxsaW5lIHgxPSIxMTAiIHkxPSIyNjgiIHgyPSIxMzAiIHkyPSIyNjgiIHN0cm9rZT0iI2M5YTg0YyIgc3Ryb2tlLXdpZHRoPSIwLjYiIG9wYWNpdHk9IjAuMjUiLz4KPC9zdmc+" crossorigin="anonymous">
+            <img id="video-frame" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMDAgMjcwIiB3aWR0aD0iMjAwIiBoZWlnaHQ9IjI3MCI+CiAgPHBhdGggZD0iTTIsNTUgTDIsMiBMNTUsMiIgc3Ryb2tlPSIjYzlhODRjIiBzdHJva2Utd2lkdGg9IjMiIGZpbGw9Im5vbmUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgogIDxwYXRoIGQ9Ik05LDQ1IEw5LDkgTDQ1LDkiIHN0cm9rZT0iI2M5YTg0YyIgc3Ryb2tlLXdpZHRoPSIwLjkiIGZpbGw9Im5vbmUiIG9wYWNpdHk9IjAuNTUiLz4KICA8Y2lyY2xlIGN4PSIyIiBjeT0iMiIgcj0iMy41IiBmaWxsPSIjYzlhODRjIi8+CiAgPHBvbHlnb24gcG9pbnRzPSIyMiwyIDI2LDYgMjIsMTAgMTgsNiIgZmlsbD0iI2M5YTg0YyIgb3BhY2l0eT0iMC43Ii8+CiAgPHBhdGggZD0iTTE5OCw1NSBMMTk4LDIgTDE0NSwyIiBzdHJva2U9IiNjOWE4NGMiIHN0cm9rZS13aWR0aD0iMyIgZmlsbD0ibm9uZSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+CiAgPHBhdGggZD0iTTE5MSw0NSBMMTkxLDkgTDE1NSw5IiBzdHJva2U9IiNjOWE4NGMiIHN0cm9rZS13aWR0aD0iMC45IiBmaWxsPSJub25lIiBvcGFjaXR5PSIwLjU1Ii8+CiAgPGNpcmNsZSBjeD0iMTk4IiBjeT0iMiIgcj0iMy41IiBmaWxsPSIjYzlhODRjIi8+CiAgPHBvbHlnb24gcG9pbnRzPSIxNzgsMiAxODIsNiAxNzgsMTAgMTc0LDYiIGZpbGw9IiNjOWE4NGMiIG9wYWNpdHk9IjAuNyIvPgogIDxwYXRoIGQ9Ik0yLDIxNSBMMiwyNjggTDU1LDI2OCIgc3Ryb2tlPSIjYzlhODRjIiBzdHJva2Utd2lkdGg9IjMiIGZpbGw9Im5vbmUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgogIDxwYXRoIGQ9Ik05LDIyNSBMOSwyNjEgTDQ1LDI2MSIgc3Ryb2tlPSIjYzlhODRjIiBzdHJva2Utd2lkdGg9IjAuOSIgZmlsbD0ibm9uZSIgb3BhY2l0eT0iMC41YSIvPgogIDxjaXJjbGUgY3g9IjIiIGN5PSIyNjgiIHI9IjMuNSIgZmlsbD0iI2M5YTg0YyIvPgogIDxwb2x5Z29uIHBvaW50cz0iMjIsMjY4IDI2LDI2NCAyMiwyNjAgMTgsMjY0IiBmaWxsPSIjYzlhODRjIiBvcGFjaXR5PSIwLjciLz4KICA8cGF0aCBkPSJNMTk4LDIxNSBMMTk4LDI2OCBMMTQ1LDI2OCIgc3Ryb2tlPSIjYzlhODRjIiBzdHJva2Utd2lkdGg9IjMiIGZpbGw9Im5vbmUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgogIDxwYXRoIGQ9Ik0xOTEsMjI1IEwxOTEsMjYxIEwxNTUsMjYxIiBzdHJva2U9IiNjOWE4NGMiIHN0cm9rZS13aWR0aD0iMC45IiBmaWxsPSJub25lIiBvcGFjaXR5PSIwLjU1Ii8+CiAgPGNpcmNsZSBjeD0iMTk4IiBjeT0iMjY4IiByPSIzLjUiIGZpbGw9IiNjOWE4NGMiLz4KICA8cG9seWdvbiBwb2ludHM9IjE3OCwyNjggMTgyLDI2NCAxNzgsMjYwIDE3NCwyNjQiIGZpbGw9IiNjOWE4NGMiIG9wYWNpdHk9IjAuNyIvPgogIDxwb2x5Z29uIHBvaW50cz0iMTAwLDEgMTA0LDUgMTAwLDkgOTYsNSIgZmlsbD0iI2M5YTg0YyIgb3BhY2l0eT0iMC44NSIvPgogIDxwb2x5Z29uIHBvaW50cz0iMTAwLDI2OSAxMDQsMjY1IDEwMCwyNjEgOTYsMjY1IiBmaWxsPSIjYzlhODRjIiBvcGFjaXR5PSIwLjg1Ii8+CiAgPHBvbHlnb24gcG9pbnRzPSIxLDEzNSA1LDEzMSA5LDEzNSA1LDEzOSIgZmlsbD0iI2M5YTg0YyIgb3BhY2l0eT0iMC44NSIvPgogIDxwYXRoIGQ9Ik0xOTksMTM1IEwxOTUsMTMxIEwxOTEsMTM1IEwxOTUsMTM5IiBmaWxsPSIjYzlhODRjIiBvcGFjaXR5PSIwLjg1Ii8+CiAgPGxpbmUgeDE9IjIiIHkxPSI3MCIgeDI9IjIiIHkyPSIxMjAiIHN0cm9rZT0iI2M5YTg0YyIgc3Ryb2tlLXdpZHRoPSIwLjYiIG9wYWNpdHk9IjAuMjUiLz4KICA8bGluZSB4MT0iMiIgeTE9IjExMCIgeDI9IjIiIHkyPSIyMDAiIHN0cm9rZT0iI2M5YTg0YyIgc3Ryb2tlLXdpZHRoPSIwLjYiIG9wYWNpdHk9IjAuMjUiLz4KICA8bGluZSB4MT0iMTk4IiB5MT0iNzAiIHgyPSIxOTgiIHkyPSIxMjAiIHN0cm9rZT0iI2M5YTg0YyIgc3Ryb2tlLXdpZHRoPSIwLjYiIG9wYWNpdHk9IjAuMjUiLz4KICA8bGluZSB4MT0iMTk4IiB5MT0iMTUwIiB4Mj0iMTk4IiB5Mj0iMjAwIiBzdHJva2U9IiNjOWE4NGMiIHN0cm9rZS13aWR0aD0iMC42IiBvcGFjaXR5PSIwLjI1Ii8+CiAgPGxpbmUgeDE9IjcyIiB5MT0iMiIgeDI9IjkwIiB5Mj0iMiIgc3Ryb2tlPSIjYzlhODRjIiBzdHJva2Utd2lkdGg9IjAuNiIgb3BhY2l0eT0iMC4yNSIvPgogIDxsaW5lIHgxPSIxMTAiIHkxPSIyIiBgeDI9IjEzMCIgeTI9IjIiIHN0cm9rZT0iI2M5YTg0YyIgc3Ryb2tlLXdpZHRoPSIwLjYiIG9wYWNpdHk9IjAuMjUiLz4KICA8bGluZSB4MT0iNzAiIHkxPSIyNjgiIHgyPSI5MCIgeTI9IjI2OCIgc3Ryb2tlPSIjYzlhODRjIiBzdHJva2Utd2lkdGg9IjAuNiIgb3BhY2l0eT0iMC4yNSIvPgogIDxsaW5lIHgxPSIxMTAiIHkxPSIyNjgiIHgyPSIxMzAiIHkyPSIyNjgiIHN0cm9rZT0iI2M5YTg0YyIgc3Ryb2tlLXdpZHRoPSIwLjYiIG9wYWNpdHk9IjAuMjUiLz4KPC9zdmc+" crossorigin="anonymous">
 
             <!-- ⚠️ ملف الموسيقى الخلفية الموحد music.mp3 المرفوع بجانب ملف index.html في مستودع الجيت هاب [1] -->
             <audio id="bg-music" src="./music.mp3" preload="auto" loop crossorigin="anonymous"></audio>
