@@ -1,80 +1,531 @@
-<?php
-// تعديل إعدادات السيرفر للسماح برفع ملفات ذات أحجام كبيرة
-ini_set('upload_max_filesize', '500M');
-ini_set('post_max_size', '505M');
-ini_set('max_input_time', 3600);
-ini_set('max_execution_time', 3600);
-
-// تفعيل ميزات ترميز UTF-8 للغة العربية لضمان توافق أسماء المجلدات
-header('Content-Type: text/html; charset=utf-8');
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ألبوم الصور التفاعلي · LiveMemories</title>
     
-    // استقبال الاسم العربي وتنظيفه من الرموز الخاصة مع السماح بالحروف العربية، الإنجليزية، الأرقام، والمسافات
-    $rawClientName = $_POST['clientName'];
+    <!-- استدعاء الخطوط الفاخرة المعتمدة بالهوية البصرية -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&family=Cinzel:wght@600;700&display=swap" rel="stylesheet">
+
+    <!-- استدعاء مكتبات MindAR فائقة السرعة والمستقرة جداً -->
+    <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js"></script>
     
-    // فلتر ذكي يسمح بالأبجدية العربية والمسافات والشرطات فقط ويمنع أي أكواد ضارة
-    $clientName = preg_replace('/[^\p{Arabic}\p{L}0-9\s_-]/u', '', $rawClientName);
-    $clientName = trim($clientName);
-    
-    // تنظيف رقم الهاتف ومسح أي رموز غريبة
-    $clientPhone = preg_replace('/[^0-9+]/', '', $_POST['clientPhone']);
-    
-    if (empty($clientName)) {
-        http_response_code(400);
-        echo "اسم العميل غير صالح.";
-        exit;
-    }
-
-    // بناء المسار الشجري المعتمد للعميل تلقائياً على خادمك بالاسم العربي
-    $clientBaseDir = __DIR__ . '/' . $clientName;
-    $albumDir = $clientBaseDir . '/Album';
-    $photosDir = $albumDir . '/photos';
-    $videosDir = $albumDir . '/videos';
-
-    // إنشاء المجلدات مع التأكد من إعطاء الصلاحيات الصحيحة لدعم أسماء المجلدات العربية
-    if (!file_exists($photosDir)) {
-        mkdir($photosDir, 0755, true);
-    }
-    if (!file_exists($videosDir)) {
-        mkdir($videosDir, 0755, true);
-    }
-
-    // حفظ ملف نصي صغير يحتوي على بيانات الاتصال بالعميل كمرجع لك بداخل مجلد العميل
-    file_put_contents($clientBaseDir . '/info.txt', "Client Name: $clientName\nWhatsApp/Phone: $clientPhone\nUpload Date: " . date('Y-m-d H:i:s'));
-
-    // الدوران حول المدخلات لتسمية وحفظ الملفات بالتسلسل المعتمد (01, 02 ... 20)
-    for ($i = 1; $i <= 20; $i++) {
-        $pageNum = str_pad($i, 2, '0', STR_PAD_LEFT);
-
-        // 1. معالجة وحفظ الصور المطبوعة
-        $imgKey = 'img_' . $pageNum;
-        if (isset($_FILES[$imgKey]) && $_FILES[$imgKey]['error'] === UPLOAD_ERR_OK) {
-            $tmpName = $_FILES[$imgKey]['tmp_name'];
-            $ext = pathinfo($_FILES[$imgKey]['name'], PATHINFO_EXTENSION);
-            if (empty($ext)) $ext = 'jpg';
-            
-            $targetPath = $photosDir . '/' . $pageNum . '.' . strtolower($ext);
-            move_uploaded_file($tmpName, $targetPath);
+    <style>
+        :root {
+            --gold: #c9a84c;
+            --gold-light: #f0d080;
+            --gold-dark: #8a6d28;
+            --dark-bg: #070b16;
+            --blue-gradient: #0d1527;
+            --white-dim: rgba(255, 255, 255, 0.85);
         }
 
-        // 2. معالجة وحفظ فيديوهات الواقع المعزز المقابلة
-        $vidKey = 'vid_' . $pageNum;
-        if (isset($_FILES[$vidKey]) && $_FILES[$vidKey]['error'] === UPLOAD_ERR_OK) {
-            $tmpName = $_FILES[$vidKey]['tmp_name'];
-            $ext = pathinfo($_FILES[$vidKey]['name'], PATHINFO_EXTENSION);
-            if (empty($ext)) $ext = 'mp4';
-            
-            $targetPath = $videosDir . '/' . $pageNum . '.' . strtolower($ext);
-            move_uploaded_file($tmpName, $targetPath);
+        body { margin: 0; overflow: hidden; font-family: 'Tajawal', sans-serif; user-select: none; background: #000; }
+        
+        /* ضبط الكاميرا لتغطية الشاشة بأبعاد مريحة */
+        video#arjs-video {
+            width: 100vw !important;
+            height: 100vh !important;
+            object-fit: cover !important;
+            left: 0px !important;
+            top: 0px !important;
+            margin: 0px !important;
         }
-    }
 
-    http_response_code(200);
-    echo "Success";
-    exit;
-} else {
-    http_response_code(405);
-    echo "Method Not Allowed";
-}
-?>
+        .a-canvas {
+            width: 100vw !important;
+            height: 100vh !important;
+            left: 0px !important;
+            top: 0px !important;
+        }
+
+        /* ----------------- صفحة البداية الفاخرة (Splash Screen) ----------------- */
+        #splash-screen {
+            position: fixed;
+            inset: 0;
+            background: linear-gradient(155deg, #0b1122 0%, #060a14 55%, #09101f 100%);
+            z-index: 10000; /* فوق الكاميرا وباقي الأزرار */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.6s ease, visibility 0.6s ease;
+        }
+
+        .splash-content {
+            text-align: center;
+            padding: 30px;
+            max-width: 420px;
+            width: 90%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .brand-logo-svg {
+            width: 110px;
+            height: 110px;
+            margin-bottom: 15px;
+            filter: drop-shadow(0 0 14px rgba(201,168,76,0.45));
+        }
+
+        .brand-name {
+            font-family: 'Cinzel', serif;
+            font-size: 26px;
+            font-weight: 700;
+            color: var(--gold-light);
+            letter-spacing: 2px;
+            text-shadow: 0 0 18px rgba(201,168,76,0.4);
+            margin-bottom: 5px;
+        }
+        .brand-name span { color: #fff; }
+
+        .brand-tagline {
+            font-size: 12px;
+            letter-spacing: 1.5px;
+            color: rgba(255, 255, 255, 0.4);
+            text-transform: uppercase;
+            margin-bottom: 25px;
+        }
+
+        .splash-desc {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.7);
+            line-height: 1.7;
+            margin-bottom: 35px;
+        }
+
+        #ready-btn {
+            background: linear-gradient(135deg, var(--gold-dark), var(--gold));
+            border: none;
+            border-radius: 30px;
+            padding: 15px 45px;
+            color: #070b16;
+            font-size: 15px;
+            font-weight: 800;
+            cursor: pointer;
+            box-shadow: 0 8px 25px rgba(201, 168, 76, 0.3);
+            font-family: 'Tajawal', sans-serif;
+            transition: all 0.3s ease;
+        }
+
+        #ready-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 30px rgba(201, 168, 76, 0.45);
+            background: linear-gradient(135deg, var(--gold), var(--gold-light));
+        }
+
+        /* تصميم العبارة الإرشادية الأنيقة فوق الكاميرا */
+        #instruction-overlay {
+            position: absolute;
+            top: 45px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 9999;
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px rgba(255, 255, 255, 0.15) solid;
+            color: #ffffff;
+            padding: 12px 24px;
+            border-radius: 30px;
+            font-size: 14px;
+            font-weight: bold;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            white-space: nowrap;
+            pointer-events: none;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+
+        /* تصميم أزرار التحكم العائمة */
+        .control-btn {
+            position: absolute;
+            z-index: 9999;
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px rgba(255, 255, 255, 0.15) solid;
+            color: white;
+            cursor: pointer;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            white-space: nowrap !important;
+        }
+        .control-btn:active { transform: scale(0.9); }
+
+        #mute-btn {
+            top: 30px !important;
+            right: 20px !important;
+            left: auto !important;
+            bottom: auto !important;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            font-size: 18px;
+        }
+
+        #facebook-btn {
+            bottom: 30px !important;
+            right: 20px !important;
+            left: auto !important;
+            top: auto !important;
+            background: #1877f2;
+            border-radius: 30px;
+            padding: 12px 20px;
+            font-size: 13px;
+            font-weight: bold;
+            gap: 8px;
+            border: 1px rgba(255, 255, 255, 0.25) solid;
+            box-shadow: 0 8px 20px rgba(24, 119, 242, 0.3);
+        }
+
+        #whatsapp-btn {
+            bottom: 30px !important;
+            left: 20px !important;
+            right: auto !important;
+            top: auto !important;
+            background: #25d366;
+            border-radius: 30px;
+            padding: 12px 20px;
+            font-size: 13px;
+            font-weight: bold;
+            gap: 8px;
+            border: 1px rgba(255, 255, 255, 0.25) solid;
+            box-shadow: 0 8px 20px rgba(37, 211, 102, 0.3);
+        }
+    </style>
+
+    <script>
+        let isTargetActive = false;
+        let muteBtnState = false; 
+        let customAudioLinks = {}; 
+
+        let activeVideo = null;
+        let activeAudio = null;
+
+        // قراءة ملف الروابط التفاعلية المرفوع بواسطة الـ PHP فور فتح الصفحة
+        fetch('./audio_links.json')
+            .then(res => res.json())
+            .then(data => { customAudioLinks = data; })
+            .catch(err => console.log("لا توجد روابط تفاعلية مضافة للعميل."));
+
+        // برمجة المكون المطور للتحكم الذكي بالصوت لكل صفحة تفاعلية بشكل مستقل
+        AFRAME.registerComponent('video-controller', {
+            schema: {
+                video: {type: 'selector'},
+                pageNum: {type: 'string'}
+            },
+            init: function () {
+                const video = this.data.video;
+                const pageNum = this.data.pageNum;
+                const target = this.el;
+                const instruction = document.querySelector('#instruction-overlay');
+
+                const audio = document.createElement('audio');
+                audio.setAttribute('preload', 'auto');
+                audio.setAttribute('loop', 'true');
+                audio.setAttribute('crossorigin', 'anonymous');
+                this.audio = audio;
+                document.body.appendChild(audio);
+
+                target.addEventListener('targetFound', () => {
+                    isTargetActive = true;
+                    activeVideo = video;
+                    activeAudio = audio;
+
+                    const localAudioSrc = `./audios/${pageNum}.mp3`;
+                    const customLink = customAudioLinks[pageNum] || "";
+
+                    fetch(localAudioSrc, { method: 'HEAD' })
+                        .then(res => {
+                            if (res.ok) {
+                                playWithCustomAudio(localAudioSrc);
+                            } else if (customLink !== "") {
+                                playWithCustomAudio(customLink);
+                            } else {
+                                playWithNativeSound();
+                            }
+                        })
+                        .catch(() => {
+                            if (customLink !== "") {
+                                playWithCustomAudio(customLink);
+                            } else {
+                                playWithNativeSound();
+                            }
+                        });
+
+                    function playWithCustomAudio(src) {
+                        video.muted = true; 
+                        video.play().catch(err => console.log(err));
+
+                        audio.src = src;
+                        audio.muted = muteBtnState; 
+                        audio.play()
+                            .then(() => hideInstruction())
+                            .catch(err => showAudioTapRequired());
+                    }
+
+                    function playWithNativeSound() {
+                        video.muted = muteBtnState; 
+                        video.play()
+                            .then(() => hideInstruction())
+                            .catch(err => showAudioTapRequired());
+                    }
+
+                    function hideInstruction() {
+                        if (instruction) {
+                            instruction.style.opacity = '0';
+                            instruction.style.visibility = 'hidden';
+                        }
+                    }
+
+                    function showAudioTapRequired() {
+                        if (instruction && !muteBtnState) {
+                            instruction.innerHTML = "🔊 اضغط على الشاشة لتفعيل الصوت الموسيقي";
+                            instruction.style.opacity = '1';
+                            instruction.style.visibility = 'visible';
+                        }
+                    }
+                });
+
+                target.addEventListener('targetLost', () => {
+                    isTargetActive = false;
+                    video.pause();
+                    audio.pause();
+                    
+                    activeVideo = null;
+                    activeAudio = null;
+
+                    if (instruction) {
+                        instruction.innerHTML = "وجّه الكاميرا نحو الصورة المطبوعة 📸";
+                        instruction.style.opacity = '1';
+                        instruction.style.visibility = 'visible';
+                    }
+                });
+            }
+        });
+
+        // إدارة زر كتم الصوت واللمس لفك حظر متصفحات الهواتف الذكية
+        window.addEventListener('DOMContentLoaded', () => {
+            const instruction = document.querySelector('#instruction-overlay');
+            const muteBtn = document.querySelector('#mute-btn');
+            const splashScreen = document.querySelector('#splash-screen');
+            const readyBtn = document.querySelector('#ready-btn');
+
+            // منطق نقر زر "جاهز للبدء"
+            readyBtn.addEventListener('click', () => {
+                // تفعيل صوت مؤقت غير مسموع لفك حظر المتصفحات فوراً
+                const context = new (window.AudioContext || window.webkitAudioContext)();
+                context.resume();
+
+                // إخفاء صفحة البداية الفاخرة تدريجياً
+                splashScreen.style.opacity = '0';
+                splashScreen.style.visibility = 'hidden';
+                setTimeout(() => {
+                    splashScreen.remove(); // إزالة العنصر تماماً لتوفير موارد الذاكرة
+                }, 600);
+            });
+
+            muteBtn.addEventListener('click', (e) => {
+                e.stopPropagation(); 
+                
+                if (muteBtnState) {
+                    muteBtnState = false;
+                    muteBtn.innerHTML = "🔊";
+                    
+                    if (isTargetActive) {
+                        if (activeAudio && activeAudio.src && !activeAudio.src.endsWith('undefined')) {
+                            activeAudio.muted = false;
+                            activeAudio.play().catch(e => console.log(e));
+                        } else if (activeVideo) {
+                            activeVideo.muted = false;
+                            activeVideo.play().catch(e => console.log(e));
+                        }
+                    }
+                } else {
+                    muteBtnState = true;
+                    muteBtn.innerHTML = "🔇";
+                    
+                    if (activeAudio) activeAudio.muted = true;
+                    if (activeVideo) activeVideo.muted = true;
+                }
+            });
+
+            document.body.addEventListener('click', () => {
+                if (isTargetActive && !muteBtnState) {
+                    if (activeAudio && activeAudio.paused && activeAudio.src && !activeAudio.src.endsWith('undefined')) {
+                        activeAudio.play().then(() => {
+                            if (instruction) {
+                                instruction.style.opacity = '0';
+                                instruction.style.visibility = 'hidden';
+                            }
+                        }).catch(e => console.log(e));
+                    } else if (activeVideo && activeVideo.paused) {
+                        activeVideo.play().then(() => {
+                            if (instruction) {
+                                instruction.style.opacity = '0';
+                                instruction.style.visibility = 'hidden';
+                            }
+                        }).catch(e => console.log(e));
+                    }
+                }
+            });
+        });
+    </script>
+</head>
+<body>
+
+    <!-- 🌟 صفحة البداية الفاخرة (Splash Screen) المضافة حديثاً باللوجو الخاص بك 🌟 -->
+    <div id="splash-screen">
+        <div class="splash-content">
+            <!-- اللوجو الملكي المذهب الفاخر المعتمد في هوية LiveMemories -->
+            <svg class="brand-logo-svg" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="60" cy="62" r="50" fill="rgba(201,168,76,0.025)"/>
+                <path d="M 38,36 L 46,26 C 49,23 53,22 60,22 C 67,22 71,23 74,26 L 82,36 C 88,36 93,40 95,46 C 97,51 97,58 97,66 C 97,74 97,81 95,86 C 93,92 88,96 82,96 L 38,96 C 32,96 27,92 25,86 C 23,81 23,74 23,66 C 23,58 23,51 25,46 C 27,40 32,36 38,36 Z" stroke="#c9a84c" stroke-width="1.8" fill="none" opacity="0.88"/>
+                <circle cx="82" cy="27" r="4" stroke="#c9a84c" stroke-width="1.5" fill="none" opacity="0.82"/>
+                <circle cx="60" cy="64" r="32" stroke="#c9a84c" stroke-width="1.5" fill="none" opacity="0.92"/>
+                <circle cx="60" cy="64" r="23" fill="#070b16" stroke="#c9a84c" stroke-width="1.5"/>
+                <text x="60" y="71" text-anchor="middle" font-family="'Cinzel','Georgia',serif" font-size="20" font-weight="700" fill="#f0d080" letter-spacing="1">LM</text>
+            </svg>
+            <div class="brand-name">Live<span>Memories</span></div>
+            <div class="brand-tagline">AR Interactive Photo Album</div>
+            <p class="splash-desc">مرحباً بك في عالم الذكريات التفاعلية.<br>برجاء السماح للكاميرا بالعمل والضغط على الزر لتفعيل الموسيقى والأصوات المخصصة فوراً عند مسح الصور.</p>
+            <button id="ready-btn">جاهز للبدء ✨</button>
+        </div>
+    </div>
+
+    <button id="mute-btn" class="control-btn">🔊</button>
+    
+    <a id="facebook-btn" class="control-btn" href="https://www.facebook.com/profile.php?id=61582938020960" target="_blank">
+        🔵 صفحتنا على فيسبوك
+    </a>
+
+    <a id="whatsapp-btn" class="control-btn" href="https://wa.me/201096320826?text=السلام%20عليكم%20ورحمة%20الله%20وبركاته%2C%20أود%20الطلب%20والاستفسار%20عن%20ألبوم%20الصور%20التفاعلي" target="_blank">
+        💬 اطلب ألبومك الخاص
+    </a>
+
+    <div id="instruction-overlay">وجّه الكاميرا نحو الصورة المطبوعة 📸</div>
+
+    <a-scene mindar-image="imageTargetSrc: ./markers/targets.mind; autoStart: true; filterMinCF: 0.001; filterBeta: 0.01;" 
+             color-space="sRGB" 
+             renderer="colorManagement: true, physicallyCorrectLights" 
+             vr-mode-ui="enabled: false" 
+             device-orientation-permission-ui="enabled: false">
+        
+        <a-assets>
+            <video id="video-1" src="./videos/01.mp4" preload="auto" loop="true" muted playsinline webkit-playsinline></video>
+            <video id="video-2" src="./videos/02.mp4" preload="auto" loop="true" muted playsinline webkit-playsinline></video>
+            <video id="video-3" src="./videos/03.mp4" preload="auto" loop="true" muted playsinline webkit-playsinline></video>
+            <video id="video-4" src="./videos/04.mp4" preload="auto" loop="true" muted playsinline webkit-playsinline></video>
+            <video id="video-5" src="./videos/05.mp4" preload="auto" loop="true" muted playsinline webkit-playsinline></video>
+            <video id="video-6" src="./videos/06.mp4" preload="auto" loop="true" muted playsinline webkit-playsinline></video>
+            <video id="video-7" src="./videos/07.mp4" preload="auto" loop="true" muted playsinline webkit-playsinline></video>
+            <video id="video-8" src="./videos/08.mp4" preload="auto" loop="true" muted playsinline webkit-playsinline></video>
+            <video id="video-9" src="./videos/09.mp4" preload="auto" loop="true" muted playsinline webkit-playsinline></video>
+            <video id="video-10" src="./videos/10.mp4" preload="auto" loop="true" muted playsinline webkit-playsinline></video>
+            <video id="video-11" src="./videos/11.mp4" preload="auto" loop="true" muted playsinline webkit-playsinline></video>
+            <video id="video-12" src="./videos/12.mp4" preload="auto" loop="true" muted playsinline webkit-playsinline></video>
+            <video id="video-13" src="./videos/13.mp4" preload="auto" loop="true" muted playsinline webkit-playsinline></video>
+            <video id="video-14" src="./videos/14.mp4" preload="auto" loop="true" muted playsinline webkit-playsinline></video>
+            <video id="video-15" src="./videos/15.mp4" preload="auto" loop="true" muted playsinline webkit-playsinline></video>
+            <video id="video-16" src="./videos/16.mp4" preload="auto" loop="true" muted playsinline webkit-playsinline></video>
+            <video id="video-17" src="./videos/17.mp4" preload="auto" loop="true" muted playsinline webkit-playsinline></video>
+            <video id="video-18" src="./videos/18.mp4" preload="auto" loop="true" muted playsinline webkit-playsinline></video>
+            <video id="video-19" src="./videos/19.mp4" preload="auto" loop="true" muted playsinline webkit-playsinline></video>
+            <video id="video-20" src="./videos/20.mp4" preload="auto" loop="true" muted playsinline webkit-playsinline></video>
+        </a-assets>
+
+        <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+
+        <!-- ربط تلقائي ذكي للفيديو والصوت المخصص مع الأرقام من (01 إلى 20) -->
+        <a-entity mindar-image-target="targetIndex: 0" video-controller="video: #video-1; pageNum: '01'">
+            <a-video src="#video-1" width="1" height="1.35" position="0 0 0" rotation="0 0 0"></a-video>
+        </a-entity>
+        
+        <a-entity mindar-image-target="targetIndex: 1" video-controller="video: #video-2; pageNum: '02'">
+            <a-video src="#video-2" width="1" height="1.35" position="0 0 0" rotation="0 0 0"></a-video>
+        </a-entity>
+
+        <a-entity mindar-image-target="targetIndex: 2" video-controller="video: #video-3; pageNum: '03'">
+            <a-video src="#video-3" width="1" height="1.35" position="0 0 0" rotation="0 0 0"></a-video>
+        </a-entity>
+
+        <a-entity mindar-image-target="targetIndex: 3" video-controller="video: #video-4; pageNum: '04'">
+            <a-video src="#video-4" width="1" height="1.35" position="0 0 0" rotation="0 0 0"></a-video>
+        </a-entity>
+
+        <a-entity mindar-image-target="targetIndex: 4" video-controller="video: #video-5; pageNum: '05'">
+            <a-video src="#video-5" width="1" height="1.35" position="0 0 0" rotation="0 0 0"></a-video>
+        </a-entity>
+
+        <a-entity mindar-image-target="targetIndex: 5" video-controller="video: #video-6; pageNum: '06'">
+            <a-video src="#video-6" width="1" height="1.35" position="0 0 0" rotation="0 0 0"></a-video>
+        </a-entity>
+
+        <a-entity mindar-image-target="targetIndex: 6" video-controller="video: #video-7; pageNum: '07'">
+            <a-video src="#video-7" width="1" height="1.35" position="0 0 0" rotation="0 0 0"></a-video>
+        </a-entity>
+
+        <a-entity mindar-image-target="targetIndex: 7" video-controller="video: #video-8; pageNum: '08'">
+            <a-video src="#video-8" width="1" height="1.35" position="0 0 0" rotation="0 0 0"></a-video>
+        </a-entity>
+
+        <a-entity mindar-image-target="targetIndex: 8" video-controller="video: #video-9; pageNum: '09'">
+            <a-video src="#video-9" width="1" height="1.35" position="0 0 0" rotation="0 0 0"></a-video>
+        </a-entity>
+
+        <a-entity mindar-image-target="targetIndex: 9" video-controller="video: #video-10; pageNum: '10'">
+            <a-video src="#video-10" width="1" height="1.35" position="0 0 0" rotation="0 0 0"></a-video>
+        </a-entity>
+
+        <a-entity mindar-image-target="targetIndex: 10" video-controller="video: #video-11; pageNum: '11'">
+            <a-video src="#video-11" width="1" height="1.35" position="0 0 0" rotation="0 0 0"></a-video>
+        </a-entity>
+
+        <a-entity mindar-image-target="targetIndex: 11" video-controller="video: #video-12; pageNum: '12'">
+            <a-video src="#video-12" width="1" height="1.35" position="0 0 0" rotation="0 0 0"></a-video>
+        </a-entity>
+
+        <a-entity mindar-image-target="targetIndex: 12" video-controller="video: #video-13; pageNum: '13'">
+            <a-video src="#video-13" width="1" height="1.35" position="0 0 0" rotation="0 0 0"></a-video>
+        </a-entity>
+
+        <a-entity mindar-image-target="targetIndex: 13" video-controller="video: #video-14; pageNum: '14'">
+            <a-video src="#video-14" width="1" height="1.35" position="0 0 0" rotation="0 0 0"></a-video>
+        </a-entity>
+
+        <a-entity mindar-image-target="targetIndex: 14" video-controller="video: #video-15; pageNum: '15'">
+            <a-video src="#video-15" width="1" height="1.35" position="0 0 0" rotation="0 0 0"></a-video>
+        </a-entity>
+
+        <a-entity mindar-image-target="targetIndex: 15" video-controller="video: #video-16; pageNum: '16'">
+            <a-video src="#video-16" width="1" height="1.35" position="0 0 0" rotation="0 0 0"></a-video>
+        </a-entity>
+
+        <a-entity mindar-image-target="targetIndex: 16" video-controller="video: #video-17; pageNum: '17'">
+            <a-video src="#video-17" width="1" height="1.35" position="0 0 0" rotation="0 0 0"></a-video>
+        </a-entity>
+
+        <a-entity mindar-image-target="targetIndex: 17" video-controller="video: #video-18; pageNum: '18'">
+            <a-video src="#video-18" width="1" height="1.35" position="0 0 0" rotation="0 0 0"></a-video>
+        </a-entity>
+
+        <a-entity mindar-image-target="targetIndex: 18" video-controller="video: #video-19; pageNum: '19'">
+            <a-video src="#video-19" width="1" height="1.35" position="0 0 0" rotation="0 0 0"></a-video>
+        </a-entity>
+
+        <a-entity mindar-image-target="targetIndex: 19" video-controller="video: #video-20; pageNum: '20'">
+            <a-video src="#video-20" width="1" height="1.35" position="0 0 0" rotation="0 0 0"></a-video>
+        </a-entity>
+
+    </a-scene>
+
+</body>
+</html>
