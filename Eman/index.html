@@ -634,9 +634,32 @@
                 const scanCircle = document.querySelector('#scan-circle');
                 const guideFrame = document.querySelector('#guide-frame-box');
 
+                // Force texture update helper - يحل مشكلة الشاشة السوداء
+                const forceTextureUpdate = () => {
+                    const aVideoEl = target.querySelector('a-video');
+                    if (!aVideoEl) return;
+                    const mesh = aVideoEl.getObject3D('mesh');
+                    if (mesh && mesh.material && mesh.material.map) {
+                        mesh.material.map.needsUpdate = true;
+                        mesh.material.needsUpdate = true;
+                    }
+                    const comp = aVideoEl.components && aVideoEl.components.material;
+                    if (comp && comp.material && comp.material.map) {
+                        comp.material.map.needsUpdate = true;
+                    }
+                };
+
                 target.addEventListener('targetFound', () => {
                     isTargetActive = true;
-                    video.play().catch(e => console.log(e));
+                    video.currentTime = 0;
+                    const playPromise = video.play();
+                    if (playPromise !== undefined) {
+                        playPromise.then(() => {
+                            forceTextureUpdate();
+                            setTimeout(forceTextureUpdate, 150);
+                            setTimeout(forceTextureUpdate, 400);
+                        }).catch(e => console.log('video play error:', e));
+                    }
 
                     frame && frame.classList.add('found');
                     status && status.classList.add('active');
@@ -670,6 +693,17 @@
                         instr.classList.remove('hidden');
                     }
                 });
+            },
+
+            // tick يشتغل كل frame ويضمن تحديث الـ texture باستمرار (يمنع الشاشة السوداء)
+            tick: function () {
+                if (!this.data.video || this.data.video.paused) return;
+                const aVideoEl = this.el.querySelector('a-video');
+                if (!aVideoEl) return;
+                const mesh = aVideoEl.getObject3D('mesh');
+                if (mesh && mesh.material && mesh.material.map) {
+                    mesh.material.map.needsUpdate = true;
+                }
             }
         });
 
@@ -927,16 +961,16 @@
 
         <a-assets>
             <!-- 🚨 [6] قائمة الفيديوهات الـ 10 🚨 -->
-            <video id="video-1"  src="./videos/video1.mp4"  preload="auto" loop muted playsinline webkit-playsinline></video>
-            <video id="video-2"  src="./videos/video2.mp4"  preload="auto" loop muted playsinline webkit-playsinline></video>
-            <video id="video-3"  src="./videos/video3.mp4"  preload="auto" loop muted playsinline webkit-playsinline></video>
-            <video id="video-4"  src="./videos/video4.mp4"  preload="auto" loop muted playsinline webkit-playsinline></video>
-            <video id="video-5"  src="./videos/video5.mp4"  preload="auto" loop muted playsinline webkit-playsinline></video>
-            <video id="video-6"  src="./videos/video6.mp4"  preload="auto" loop muted playsinline webkit-playsinline></video>
-            <video id="video-7"  src="./videos/video7.mp4"  preload="auto" loop muted playsinline webkit-playsinline></video>
-            <video id="video-8"  src="./videos/video8.mp4"  preload="auto" loop muted playsinline webkit-playsinline></video>
-            <video id="video-9"  src="./videos/video9.mp4"  preload="auto" loop muted playsinline webkit-playsinline></video>
-            <video id="video-10" src="./videos/video10.mp4" preload="auto" loop muted playsinline webkit-playsinline></video>
+            <video id="video-1"  src="./videos/video1.mp4"  preload="auto" loop muted playsinline webkit-playsinline crossorigin="anonymous"></video>
+            <video id="video-2"  src="./videos/video2.mp4"  preload="auto" loop muted playsinline webkit-playsinline crossorigin="anonymous"></video>
+            <video id="video-3"  src="./videos/video3.mp4"  preload="auto" loop muted playsinline webkit-playsinline crossorigin="anonymous"></video>
+            <video id="video-4"  src="./videos/video4.mp4"  preload="auto" loop muted playsinline webkit-playsinline crossorigin="anonymous"></video>
+            <video id="video-5"  src="./videos/video5.mp4"  preload="auto" loop muted playsinline webkit-playsinline crossorigin="anonymous"></video>
+            <video id="video-6"  src="./videos/video6.mp4"  preload="auto" loop muted playsinline webkit-playsinline crossorigin="anonymous"></video>
+            <video id="video-7"  src="./videos/video7.mp4"  preload="auto" loop muted playsinline webkit-playsinline crossorigin="anonymous"></video>
+            <video id="video-8"  src="./videos/video8.mp4"  preload="auto" loop muted playsinline webkit-playsinline crossorigin="anonymous"></video>
+            <video id="video-9"  src="./videos/video9.mp4"  preload="auto" loop muted playsinline webkit-playsinline crossorigin="anonymous"></video>
+            <video id="video-10" src="./videos/video10.mp4" preload="auto" loop muted playsinline webkit-playsinline crossorigin="anonymous"></video>
 
             <img id="video-frame" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMDAgMjcwIiB3aWR0aD0iMjAwIiBoZWlnaHQ9IjI3MCI+CiAgPHBhdGggZD0iTTIsNTUgTDIsMiBMNTUsMiIgc3Ryb2tlPSIjYzlhODRjIiBzdHJva2Utd2lkdGg9IjMiIGZpbGw9Im5vbmUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgogIDxwYXRoIGQ9Ik05LDQ1IEw5LDkgTDQ1LDkiIHN0cm9rZT0iI2M5YTg0YyIgc3Ryb2tlLXdpZHRoPSIwLjkiIGZpbGw9Im5vbmUiIG9wYWNpdHk9IjAuNTUiLz4KICA8Y2lyY2xlIGN4PSIyIiBjeT0iMiIgcj0iMy41IiBmaWxsPSIjYzlhODRjIi8+CiAgPHBvbHlnb24gcG9pbnRzPSIyMiwyIDI2LDYgMjIsMTAgMTgsNiIgZmlsbD0iI2M5YTg0YyIgb3BhY2l0eT0iMC43Ii8+CiAgPHBhdGggZD0iTTE5OCw1NSBMMTk4LDIgTDE0NSwyIiBzdHJva2U9IiNjOWE4NGMiIHN0cm9rZS13aWR0aD0iMyIgZmlsbD0ibm9uZSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+CiAgPHBhdGggZD0iTTE5MSw0NSBMMTkxLDkgTDE1NSw5IiBzdHJva2U9IiNjOWE4NGMiIHN0cm9rZS13aWR0aD0iMC45IiBmaWxsPSJub25lIiBvcGFjaXR5PSIwLjU1Ii8+CiAgPGNpcmNsZSBjeD0iMTk4IiBjeT0iMiIgcj0iMy41IiBmaWxsPSIjYzlhODRjIi8+CiAgPHBvbHlnb24gcG9pbnRzPSIxNzgsMiAxODIsNiAxNzgsMTAgMTc0LDYiIGZpbGw9IiNjOWE4NGMiIG9wYWNpdHk9IjAuNyIvPgogIDxwYXRoIGQ9Ik0yLDIxNSBMMiwyNjggTDU1LDI2OCIgc3Ryb2tlPSIjYzlhODRjIiBzdHJva2Utd2lkdGg9IjMiIGZpbGw9Im5vbmUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgogIDxwYXRoIGQ9Ik05LDIyNSBMOSwyNjEgTDQ1LDI2MSIgc3Ryb2tlPSIjYzlhODRjIiBzdHJva2Utd2lkdGg9IjAuOSIgZmlsbD0ibm9uZSIgb3BhY2l0eT0iMC41NSIvPgogIDxjaXJjbGUgY3g9IjIiIGN5PSIyNjgiIHI9IjMuNSIgZmlsbD0iI2M5YTg0YyIvPgogIDxwb2x5Z29uIHBvaW50cz0iMjIsMjY4IDI2LDI2NCAyMiwyNjAgMTgsMjY0IiBmaWxsPSIjYzlhODRjIiBvcGFjaXR5PSIwLjciLz4KICA8cGF0aCBkPSJNMTk4LDIxNSBMMTk4LDI2OCBMMTQ1LDI2OCIgc3Ryb2tlPSIjYzlhODRjIiBzdHJva2Utd2lkdGg9IjMiIGZpbGw9Im5vbmUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgogIDxwYXRoIGQ9Ik0xOTEsMjI1IEwxOTEsMjYxIEwxNTUsMjYxIiBzdHJva2U9IiNjOWE4NGMiIHN0cm9rZS13aWR0aD0iMC45IiBmaWxsPSJub25lIiBvcGFjaXR5PSIwLjU1Ii8+CiAgPGNpcmNsZSBjeD0iMTk4IiBjeT0iMjY4IiByPSIzLjUiIGZpbGw9IiNjOWE4NGMiLz4KICA8cG9seWdvbiBwb2ludHM9IjE3OCwyNjggMTgyLDI2NCAxNzgsMjYwIDE3NCwyNjQiIGZpbGw9IiNjOWE4NGMiIG9wYWNpdHk9IjAuNyIvPgogIDxwb2x5Z29uIHBvaW50cz0iMTAwLDEgMTA0LDUgMTAwLDkgOTYsNSIgZmlsbD0iI2M5YTg0YyIgb3BhY2l0eT0iMC44NSIvPgogIDxwb2x5Z29uIHBvaW50cz0iMTAwLDI2OSAxMDQsMjY1IDEwMCwyNjEgOTYsMjY1IiBmaWxsPSIjYzlhODRjIiBvcGFjaXR5PSIwLjg1Ii8+CiAgPHBvbHlnb24gcG9pbnRzPSIxLDEzNSA1LDEzMSA5LDEzNSA1LDEzOSIgZmlsbD0iI2M5YTg0YyIgb3BhY2l0eT0iMC44NSIvPgogIDxwb2x5Z29uIHBvaW50cz0iMTk5LDEzNSAxOTUsMTMxIDE5MSwxMzUgMTk1LDEzOSIgZmlsbD0iI2M5YTg0YyIgb3BhY2l0eT0iMC44NSIvPgogIDxsaW5lIHgxPSIyIiB5MT0iNzAiIHgyPSIyIiB5Mj0iMTIwIiBzdHJva2U9IiNjOWE4NGMiIHN0cm9rZS13aWR0aD0iMC42IiBvcGFjaXR5PSIwLjI1Ii8+CiAgPGxpbmUgeDE9IjIiIHkxPSIxNTAiIHgyPSIyIiB5Mj0iMjAwIiBzdHJva2U9IiNjOWE4NGMiIHN0cm9rZS13aWR0aD0iMC42IiBvcGFjaXR5PSIwLjI1Ii8+CiAgPGxpbmUgeDE9IjE5OCIgeTE9IjcwIiB4Mj0iMTk4IiB5Mj0iMTIwIiBzdHJva2U9IiNjOWE4NGMiIHN0cm9rZS13aWR0aD0iMC42IiBvcGFjaXR5PSIwLjI1Ii8+CiAgPGxpbmUgeDE9IjE5OCIgeTE9IjE1MCIgeDI9IjE5OCIgeTI9IjIwMCIgc3Ryb2tlPSIjYzlhODRjIiBzdHJva2Utd2lkdGg9IjAuNiIgb3BhY2l0eT0iMC4yNSIvPgogIDxsaW5lIHgxPSI3MCIgeTE9IjIiIHgyPSI5MCIgeTI9IjIiIHN0cm9rZT0iI2M5YTg0YyIgc3Ryb2tlLXdpZHRoPSIwLjYiIG9wYWNpdHk9IjAuMjUiLz4KICA8bGluZSB4MT0iMTEwIiB5MT0iMiIgeDI9IjEzMCIgeTI9IjIiIHN0cm9rZT0iI2M5YTg0YyIgc3Ryb2tlLXdpZHRoPSIwLjYiIG9wYWNpdHk9IjAuMjUiLz4KICA8bGluZSB4MT0iNzAiIHkxPSIyNjgiIHgyPSI5MCIgeTI9IjI2OCIgc3Ryb2tlPSIjYzlhODRjIiBzdHJva2Utd2lkdGg9IjAuNiIgb3BhY2l0eT0iMC4yNSIvPgogIDxsaW5lIHgxPSIxMTAiIHkxPSIyNjgiIHgyPSIxMzAiIHkyPSIyNjgiIHN0cm9rZT0iI2M5YTg0YyIgc3Ryb2tlLXdpZHRoPSIwLjYiIG9wYWNpdHk9IjAuMjUiLz4KPC9zdmc+" crossorigin="anonymous">
             <audio id="bg-music" src="./music.mp3" preload="auto" loop crossorigin="anonymous"></audio>
@@ -961,61 +995,61 @@
 
         <!-- الصورة الأولى (ترتيب 0) -->
         <a-entity mindar-image-target="targetIndex: 0" video-controller="video: #video-1">
-            <a-video src="#video-1" width="1" height="1.35" position="0 0 0.001" rotation="0 0 0"></a-video>
+            <a-video src="#video-1" width="1" height="1.35" position="0 0 0.001" material="shader: flat; side: double"></a-video>
             <a-image src="#video-frame" width="1" height="1.35" position="0 0 0.002" material="transparent: true; alphaTest: 0.01; shader: flat"></a-image>
         </a-entity>
 
         <!-- الصورة الثانية (ترتيب 1) -->
         <a-entity mindar-image-target="targetIndex: 1" video-controller="video: #video-2">
-            <a-video src="#video-2" width="1" height="1.35" position="0 0 0.001" rotation="0 0 0"></a-video>
+            <a-video src="#video-2" width="1" height="1.35" position="0 0 0.001" material="shader: flat; side: double"></a-video>
             <a-image src="#video-frame" width="1" height="1.35" position="0 0 0.002" material="transparent: true; alphaTest: 0.01; shader: flat"></a-image>
         </a-entity>
 
         <!-- الصورة الثالثة (ترتيب 2) — ✅ تم تصحيح: كانت تعرض video-4 بدلاً من video-3 -->
         <a-entity mindar-image-target="targetIndex: 2" video-controller="video: #video-3">
-            <a-video src="#video-3" width="1" height="1.35" position="0 0 0.001" rotation="0 0 0"></a-video>
+            <a-video src="#video-3" width="1" height="1.35" position="0 0 0.001" material="shader: flat; side: double"></a-video>
             <a-image src="#video-frame" width="1" height="1.35" position="0 0 0.002" material="transparent: true; alphaTest: 0.01; shader: flat"></a-image>
         </a-entity>
 
         <!-- الصورة الرابعة (ترتيب 3) -->
         <a-entity mindar-image-target="targetIndex: 3" video-controller="video: #video-4">
-            <a-video src="#video-4" width="1" height="1.35" position="0 0 0.001" rotation="0 0 0"></a-video>
+            <a-video src="#video-4" width="1" height="1.35" position="0 0 0.001" material="shader: flat; side: double"></a-video>
             <a-image src="#video-frame" width="1" height="1.35" position="0 0 0.002" material="transparent: true; alphaTest: 0.01; shader: flat"></a-image>
         </a-entity>
 
         <!-- الصورة الخامسة (ترتيب 4) -->
         <a-entity mindar-image-target="targetIndex: 4" video-controller="video: #video-5">
-            <a-video src="#video-5" width="1" height="1.35" position="0 0 0.001" rotation="0 0 0"></a-video>
+            <a-video src="#video-5" width="1" height="1.35" position="0 0 0.001" material="shader: flat; side: double"></a-video>
             <a-image src="#video-frame" width="1" height="1.35" position="0 0 0.002" material="transparent: true; alphaTest: 0.01; shader: flat"></a-image>
         </a-entity>
 
         <!-- الصورة السادسة (ترتيب 5) -->
         <a-entity mindar-image-target="targetIndex: 5" video-controller="video: #video-6">
-            <a-video src="#video-6" width="1" height="1.35" position="0 0 0.001" rotation="0 0 0"></a-video>
+            <a-video src="#video-6" width="1" height="1.35" position="0 0 0.001" material="shader: flat; side: double"></a-video>
             <a-image src="#video-frame" width="1" height="1.35" position="0 0 0.002" material="transparent: true; alphaTest: 0.01; shader: flat"></a-image>
         </a-entity>
 
         <!-- الصورة السابعة (ترتيب 6) -->
         <a-entity mindar-image-target="targetIndex: 6" video-controller="video: #video-7">
-            <a-video src="#video-7" width="1" height="1.35" position="0 0 0.001" rotation="0 0 0"></a-video>
+            <a-video src="#video-7" width="1" height="1.35" position="0 0 0.001" material="shader: flat; side: double"></a-video>
             <a-image src="#video-frame" width="1" height="1.35" position="0 0 0.002" material="transparent: true; alphaTest: 0.01; shader: flat"></a-image>
         </a-entity>
 
         <!-- الصورة الثامنة (ترتيب 7) -->
         <a-entity mindar-image-target="targetIndex: 7" video-controller="video: #video-8">
-            <a-video src="#video-8" width="1" height="1.35" position="0 0 0.001" rotation="0 0 0"></a-video>
+            <a-video src="#video-8" width="1" height="1.35" position="0 0 0.001" material="shader: flat; side: double"></a-video>
             <a-image src="#video-frame" width="1" height="1.35" position="0 0 0.002" material="transparent: true; alphaTest: 0.01; shader: flat"></a-image>
         </a-entity>
 
         <!-- الصورة التاسعة (ترتيب 8) -->
         <a-entity mindar-image-target="targetIndex: 8" video-controller="video: #video-9">
-            <a-video src="#video-9" width="1" height="1.35" position="0 0 0.001" rotation="0 0 0"></a-video>
+            <a-video src="#video-9" width="1" height="1.35" position="0 0 0.001" material="shader: flat; side: double"></a-video>
             <a-image src="#video-frame" width="1" height="1.35" position="0 0 0.002" material="transparent: true; alphaTest: 0.01; shader: flat"></a-image>
         </a-entity>
 
         <!-- الصورة العاشرة (ترتيب 9) -->
         <a-entity mindar-image-target="targetIndex: 9" video-controller="video: #video-10">
-            <a-video src="#video-10" width="1" height="1.35" position="0 0 0.001" rotation="0 0 0"></a-video>
+            <a-video src="#video-10" width="1" height="1.35" position="0 0 0.001" material="shader: flat; side: double"></a-video>
             <a-image src="#video-frame" width="1" height="1.35" position="0 0 0.002" material="transparent: true; alphaTest: 0.01; shader: flat"></a-image>
         </a-entity>
 
