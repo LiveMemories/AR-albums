@@ -5,16 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>LiveMemories · AR Photo Album</title>
 
-    <!-- خط عربي وأجنبي أنيق معتمد للهوية -->
+    <!-- خط عربي أنيق -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&family=Cinzel:wght@400;600;700&family=Cormorant+Garamond:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
 
-    <!-- مكتبات MindAR و A-Frame المستقرة -->
+    <!-- مكتبات MindAR و A-Frame -->
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js"></script>
 
     <style>
-        /* ====== متغيرات التصميم الأساسية ومستويات الألوان الفاخرة ====== */
+        /* ====== متغيرات التصميم الأساسية ====== */
         :root {
             --gold: #c9a84c;
             --gold-light: #f0d080;
@@ -52,7 +52,7 @@
             top: 0 !important;
         }
 
-        /* ====== شاشة التحميل الافتتاحية الفاخرة ====== */
+        /* ====== شاشة التحميل الافتتاحية ====== */
         #loading-screen {
             position: fixed;
             inset: 0;
@@ -72,7 +72,7 @@
             pointer-events: none;
         }
 
-        /* ---- اللوجو المونوغرام وحلقات الدوران ---- */
+        /* ---- اللوجو الرئيسي في شاشة التحميل ---- */
         .lm-logo-wrap {
             display: flex;
             flex-direction: column;
@@ -92,15 +92,25 @@
             position: relative;
         }
 
+        /* الحلقات الدوارة حول المونوغرام */
+        /* --- حلقات الدوران --- */
         .lm-ring-outer  { animation: lm-cw  22s linear infinite;  transform-origin: 70px 70px; }
         .lm-ring-mid    { animation: lm-ccw 13s linear infinite;  transform-origin: 70px 70px; }
         .lm-ring-inner  { animation: lm-cw   7s linear infinite;  transform-origin: 70px 70px; }
 
-        .lm-arc-main  { animation: lm-cw 2.2s cubic-bezier(0.4,0,0.6,1) infinite; transform-origin: 70px 70px; }
-        .lm-arc-mid   { animation: lm-cw 2.2s cubic-bezier(0.4,0,0.6,1) infinite; transform-origin: 70px 70px; animation-delay: 0.12s; }
-        .lm-arc-tail  { animation: lm-cw 2.2s cubic-bezier(0.4,0,0.6,1) infinite; transform-origin: 70px 70px; animation-delay: 0.24s; }
+        /* --- قوس الذنب المتوهج (ثلاث طبقات) --- */
+        .lm-arc-main  { animation: lm-cw 2.2s cubic-bezier(0.4,0,0.6,1) infinite;
+                        transform-origin: 70px 70px; }
+        .lm-arc-mid   { animation: lm-cw 2.2s cubic-bezier(0.4,0,0.6,1) infinite;
+                        transform-origin: 70px 70px; animation-delay: 0.12s; }
+        .lm-arc-tail  { animation: lm-cw 2.2s cubic-bezier(0.4,0,0.6,1) infinite;
+                        transform-origin: 70px 70px; animation-delay: 0.24s; }
 
-        .lm-pulse-halo { animation: lm-pulse 2.8s ease-in-out infinite; transform-origin: 70px 70px; }
+        /* --- نبضة الهالة الخلفية --- */
+        .lm-pulse-halo { animation: lm-pulse 2.8s ease-in-out infinite;
+                         transform-origin: 70px 70px; }
+
+        /* --- وميض المركز --- */
         .lm-center-breathe { animation: lm-breathe 2.4s ease-in-out infinite; }
 
         @keyframes lm-cw    { to   { transform: rotate( 360deg); } }
@@ -125,7 +135,9 @@
             text-shadow: 0 0 28px rgba(201,168,76,0.45);
         }
 
-        .loader-brand-name span { color: var(--gold); }
+        .loader-brand-name span {
+            color: var(--gold);
+        }
 
         .loader-tagline {
             font-family: 'Cormorant Garamond', serif;
@@ -151,7 +163,9 @@
             height: 0.5px;
             background: linear-gradient(90deg, transparent, var(--gold));
         }
-        .loader-divider::after { background: linear-gradient(90deg, var(--gold), transparent); }
+        .loader-divider::after {
+            background: linear-gradient(90deg, var(--gold), transparent);
+        }
         .loader-divider-gem {
             width: 5px;
             height: 5px;
@@ -192,9 +206,17 @@
             box-shadow: 0 4px 18px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.05);
         }
 
-        .brand-bar-monogram { width: 28px; height: 28px; flex-shrink: 0; }
+        .brand-bar-monogram {
+            width: 28px;
+            height: 28px;
+            flex-shrink: 0;
+        }
 
-        .brand-bar-text { display: flex; flex-direction: column; line-height: 1.1; }
+        .brand-bar-text {
+            display: flex;
+            flex-direction: column;
+            line-height: 1.1;
+        }
 
         .brand-bar-name {
             font-family: 'Cinzel', serif;
@@ -264,6 +286,7 @@
             box-shadow: 0 0 8px rgba(77, 255, 154, 0.6);
         }
 
+        /* خط الماسح المتحرك */
         #scan-line {
             position: absolute;
             left: 10%;
@@ -281,7 +304,9 @@
             100% { top: 88%; opacity: 0; }
         }
 
-        #scan-frame.found #scan-line { display: none; }
+        #scan-frame.found #scan-line {
+            display: none;
+        }
 
         /* ====== دائرة الماسح الدوارة في منتصف الشاشة ====== */
         #scan-circle {
@@ -294,7 +319,10 @@
             transition: opacity 0.5s ease, visibility 0.5s ease;
         }
 
-        #scan-circle.hidden { opacity: 0; visibility: hidden; }
+        #scan-circle.hidden {
+            opacity: 0;
+            visibility: hidden;
+        }
 
         /* ====== الإطار الإرشادي وسط الشاشة ====== */
         #guide-frame-box {
@@ -311,7 +339,10 @@
             transition: opacity 0.5s ease, visibility 0.5s ease;
         }
 
-        #guide-frame-box.hidden { opacity: 0; visibility: hidden; }
+        #guide-frame-box.hidden {
+            opacity: 0;
+            visibility: hidden;
+        }
 
         /* زوايا الإطار الإرشادي */
         .gf-corner {
@@ -336,6 +367,7 @@
             50%       { opacity: 1;    box-shadow: 0 0 10px rgba(240,208,128,0.6); }
         }
 
+        /* الخطوط الجانبية المتقطعة */
         .gf-edge-h {
             position: absolute;
             left: 32px; right: 32px;
@@ -354,6 +386,7 @@
         .gf-edge-v.left  { left: 0; }
         .gf-edge-v.right { right: 0; }
 
+        /* نقطة المركز */
         .gf-center {
             position: absolute;
             top: 50%; left: 50%;
@@ -431,7 +464,7 @@
             50% { opacity: 0.4; transform: scale(0.6); }
         }
 
-        /* ====== مؤشر حالة الاستهداف ====== */
+        /* ====== مؤشر حالة الاستهداف (أعلى اليسار) ====== */
         #status-badge {
             position: fixed;
             top: 110px;
@@ -472,7 +505,7 @@
             animation: pulse-dot 1s ease-in-out infinite;
         }
 
-        /* ====== أزرار التحكم الفاخرة ====== */
+        /* ====== أزرار التحكم العامة ====== */
         .control-btn {
             position: fixed;
             z-index: 9998;
@@ -497,8 +530,11 @@
             box-shadow: 0 6px 24px rgba(0,0,0,0.4), 0 0 0 1px var(--gold-glow);
         }
 
-        .control-btn:active { transform: scale(0.92); }
+        .control-btn:active {
+            transform: scale(0.92);
+        }
 
+        /* ====== زر كتم الصوت ====== */
         #mute-btn {
             top: 110px;
             right: 16px;
@@ -508,6 +544,7 @@
             font-size: 18px;
         }
 
+        /* ====== زر الفيسبوك ====== */
         #facebook-btn {
             bottom: 28px;
             right: 16px;
@@ -526,6 +563,7 @@
             border-color: rgba(100, 160, 255, 0.55);
         }
 
+        /* ====== زر الواتساب ====== */
         #whatsapp-btn {
             bottom: 28px;
             left: 16px;
@@ -544,6 +582,7 @@
             border-color: rgba(50, 220, 120, 0.55);
         }
 
+        /* ====== إشعار عند اكتشاف الصورة ====== */
         #found-toast {
             position: fixed;
             bottom: 90px;
@@ -571,9 +610,7 @@
     </style>
 
     <script>
-        // دمج منطق "الكود الأصلي الخام" لتفادي التعارض وتشغيل الفيديوهات والموسيقى معاً بثبات تام [1, 4]
-        let activeTargets = 0;
-        let musicUnlocked = false;
+        let isTargetActive = false;
         let toastTimer = null;
 
         function showToast(msg) {
@@ -586,109 +623,83 @@
         }
 
         AFRAME.registerComponent('video-controller', {
-            schema: {
-                video: { type: 'selector' }
-            },
+            schema: { video: { type: 'selector' } },
             init: function () {
                 const video      = this.data.video;
                 const target     = this.el;
                 const instr      = document.querySelector('#instruction-overlay');
                 const music      = document.querySelector('#bg-music');
-                const muteBtn    = document.querySelector('#mute-btn');
                 const frame      = document.querySelector('#scan-frame');
                 const status     = document.querySelector('#status-badge');
                 const scanCircle = document.querySelector('#scan-circle');
                 const guideFrame = document.querySelector('#guide-frame-box');
 
                 target.addEventListener('targetFound', () => {
-                    activeTargets++;
+                    isTargetActive = true;
+                    video.play().catch(e => console.log(e));
 
-                    // 1️⃣ تحديث الألوان ومؤشرات البحث الجمالية
                     frame && frame.classList.add('found');
                     status && status.classList.add('active');
                     if (status) status.querySelector('.status-label').textContent = 'جارٍ العرض';
-                    
                     instr && instr.classList.add('hidden');
                     scanCircle && scanCircle.classList.add('hidden');
                     guideFrame && guideFrame.classList.add('hidden');
                     showToast('✦ تم اكتشاف الصورة');
 
-                    // 2️⃣ تشغيل الفيديو بشكل صامت أولاً (وهو ما يسمح به المتصفح بدون نقرات مسبقة) [4]
-                    video.muted = true;
-                    video.play().catch(err => console.log('تعذر تشغيل الفيديو:', err));
-
-                    // 3️⃣ تشغيل الموسيقى الموحدة المتزامنة
-                    if (activeTargets === 1) {
-                        const playPromise = music.play();
-                        if (playPromise !== undefined) {
-                            playPromise.then(() => {
-                                musicUnlocked = true;
-                                if (instr && !music.muted) {
-                                    instr.classList.add('hidden');
-                                }
-                            }).catch(err => {
-                                console.log("المتصفح حظر تشغيل الصوت تلقائياً، في انتظار اللمس");
-                                if (instr && !music.muted) {
-                                    instr.innerHTML = '<span class="inst-dot"></span> اضغط على الشاشة لتفعيل الصوت';
-                                    instr.classList.remove('hidden');
-                                }
-                            });
+                    music.play().catch(() => {
+                        if (!music.muted && instr) {
+                            instr.innerHTML = '<span class="inst-dot"></span> اضغط على الشاشة لتفعيل الصوت';
+                            instr.classList.remove('hidden');
                         }
-                    }
-
-                    muteBtn.innerHTML = music.muted ? "🔇" : "🔊";
+                    });
                 });
 
                 target.addEventListener('targetLost', () => {
-                    activeTargets = Math.max(0, activeTargets - 1);
+                    isTargetActive = false;
                     video.pause();
+                    music.pause();
 
-                    // إيقاف الموسيقى وإعادة المؤشرات للوضع الافتراضي فقط عند غياب آخر هدف تفاعلي نشط [1]
-                    if (activeTargets === 0) {
-                        music.pause();
-                        
-                        frame && frame.classList.remove('found');
-                        status && status.classList.remove('active');
-                        if (status) status.querySelector('.status-label').textContent = 'جاهز';
-                        scanCircle && scanCircle.classList.remove('hidden');
-                        guideFrame && guideFrame.classList.remove('hidden');
+                    frame && frame.classList.remove('found');
+                    status && status.classList.remove('active');
+                    if (status) status.querySelector('.status-label').textContent = 'جاهز';
+                    scanCircle && scanCircle.classList.remove('hidden');
+                    guideFrame && guideFrame.classList.remove('hidden');
 
-                        if (instr) {
-                            instr.innerHTML = '<span class="inst-dot"></span> وجّه الكاميرا نحو الصورة المطبوعة 📸';
-                            instr.classList.remove('hidden');
-                        }
+                    if (instr) {
+                        instr.innerHTML = '<span class="inst-dot"></span> وجّه الكاميرا نحو الصورة المطبوعة 📸';
+                        instr.classList.remove('hidden');
                     }
                 });
             }
         });
 
         window.addEventListener('DOMContentLoaded', () => {
-            const music       = document.querySelector('#bg-music');
-            const instruction = document.querySelector('#instruction-overlay');
-            const muteBtn     = document.querySelector('#mute-btn');
-            const guide       = document.querySelector('#guide-frame-box');
+            const music    = document.querySelector('#bg-music');
+            const instr    = document.querySelector('#instruction-overlay');
+            const muteBtn  = document.querySelector('#mute-btn');
+            const guide    = document.querySelector('#guide-frame-box');
             let cameraReady = false;
-
-            // مزامنة أيقونة الصوت الفعلي للزر من البداية
-            muteBtn.innerHTML = music.muted ? "🔇" : "🔊";
 
             /* ---- شاشة التحميل: تختفي بعد تحميل A-Frame ---- */
             const hideLoader = () => {
                 const loader = document.querySelector('#loading-screen');
                 if (loader) loader.classList.add('hidden');
-                if (instruction && !cameraReady) {
-                    instruction.innerHTML = '<span class="cam-spinner"></span> جارٍ تهيئة الكاميرا…';
-                    instruction.classList.remove('hidden');
+                /* أظهر "جارٍ تهيئة الكاميرا" في منطقة الإرشاد */
+                if (instr && !cameraReady) {
+                    instr.innerHTML = '<span class="cam-spinner"></span> جارٍ تهيئة الكاميرا…';
+                    instr.classList.remove('hidden');
                 }
             };
 
             const onCameraReady = () => {
                 if (cameraReady) return;
                 cameraReady = true;
-                if (instruction) {
-                    instruction.innerHTML = '<span class="inst-dot"></span> وجّه الكاميرا نحو الصورة المطبوعة 📸';
-                    instruction.classList.remove('hidden');
+                /* بدّل الرسالة إلى الإرشاد الفعلي */
+                if (instr) {
+                    instr.innerHTML = '<span class="inst-dot"></span> وجّه الكاميرا نحو الصورة المطبوعة 📸';
+                    instr.classList.remove('hidden');
                 }
+                /* أظهر الإطار الإرشادي */
                 guide && guide.classList.remove('hidden');
             };
 
@@ -697,69 +708,100 @@
                 scene.addEventListener('loaded', () => setTimeout(hideLoader, 800));
                 scene.addEventListener('arReady', onCameraReady);
             }
+            /* احتياطي: إذا لم يُطلَق arReady بعد 5 ثوانٍ */
             setTimeout(onCameraReady, 5000);
+            /* احتياطي لشاشة التحميل */
             setTimeout(hideLoader, 7000);
 
-            // زر كتم وتشغيل الصوت
-            muteBtn.addEventListener('click', (e) => {
+            /* ---- زر كتم الصوت ---- */
+            muteBtn.addEventListener('click', e => {
                 e.stopPropagation();
-                if (music.muted) {
-                    music.muted = false;
-                    muteBtn.innerHTML = "🔊";
-                    if (activeTargets > 0) music.play().catch(e => console.log(e));
-                } else {
-                    music.muted = true;
-                    muteBtn.innerHTML = "🔇";
-                }
+                music.muted = !music.muted;
+                muteBtn.textContent = music.muted ? '🔇' : '🔊';
+                if (!music.muted && isTargetActive) music.play().catch(() => {});
             });
 
-            // فك حظر الصوت فور لمس الشاشة نقرة واحدة
+            /* ---- لمس الشاشة لفك حظر الصوت ---- */
             document.body.addEventListener('click', () => {
-                if (activeTargets > 0 && music.paused && !music.muted) {
+                if (isTargetActive && music.paused && !music.muted) {
                     music.play().then(() => {
-                        musicUnlocked = true;
-                        if (instruction) {
-                            instruction.classList.add('hidden');
-                        }
-                    }).catch(e => console.log(e));
+                        instr && instr.classList.add('hidden');
+                    }).catch(() => {});
                 }
-            }, { once: false });
+            });
         });
     </script>
 </head>
 <body>
 
-    <!-- ===== شاشة التحميل الافتتاحية المذهلة الخاصة بك ===== -->
+    <!-- ===== شاشة التحميل الافتتاحية ===== -->
     <div id="loading-screen">
         <div class="lm-logo-wrap">
+
+            <!-- مونوغرام LM بالـ SVG - تصميم الذنب المذنبي الفاخر -->
             <div class="lm-monogram">
                 <svg viewBox="0 0 140 140" fill="none" xmlns="http://www.w3.org/2000/svg" width="140" height="140">
-                    <circle class="lm-pulse-halo" cx="70" cy="70" r="66" stroke="#c9a84c" stroke-width="22" opacity="0.06" fill="none"/>
+
+                    <!-- [ 1 ] هالة نابضة خلفية -->
+                    <circle class="lm-pulse-halo" cx="70" cy="70" r="66"
+                            stroke="#c9a84c" stroke-width="22" opacity="0.06" fill="none"/>
+
+                    <!-- [ 2 ] حلقة خارجية منقطة دوارة مع نقاط البوصلة الأربع -->
                     <g class="lm-ring-outer">
-                        <circle cx="70" cy="70" r="63" stroke="#c9a84c" stroke-width="0.6" stroke-dasharray="1.5 7" opacity="0.38"/>
+                        <circle cx="70" cy="70" r="63" stroke="#c9a84c" stroke-width="0.6"
+                                stroke-dasharray="1.5 7" opacity="0.38"/>
                         <circle cx="70" cy="7"   r="2.5" fill="#c9a84c" opacity="0.9"/>
                         <circle cx="133" cy="70" r="2.5" fill="#c9a84c" opacity="0.9"/>
                         <circle cx="70" cy="133" r="2.5" fill="#c9a84c" opacity="0.9"/>
                         <circle cx="7"  cy="70"  r="2.5" fill="#c9a84c" opacity="0.9"/>
                     </g>
-                    <path d="M70 13 L115 38 L127 70 L115 102 L70 127 L25 102 L13 70 L25 38 Z" stroke="#c9a84c" stroke-width="0.8" fill="none" opacity="0.30"/>
+
+                    <!-- [ 3 ] إطار ثماني الأضلاع ثابت -->
+                    <path d="M70 13 L115 38 L127 70 L115 102 L70 127 L25 102 L13 70 L25 38 Z"
+                          stroke="#c9a84c" stroke-width="0.8" fill="none" opacity="0.30"/>
+
+                    <!-- [ 5 ] حلقة وسطى معاكسة الاتجاه -->
                     <g class="lm-ring-mid">
-                        <circle cx="70" cy="70" r="48" stroke="#c9a84c" stroke-width="0.7" stroke-dasharray="3.5 7" opacity="0.38"/>
+                        <circle cx="70" cy="70" r="48" stroke="#c9a84c" stroke-width="0.7"
+                                stroke-dasharray="3.5 7" opacity="0.38"/>
                     </g>
+
+                    <!-- [ 6 ] الحلقات البيضاوية الثلاث المتقاطعة (رمز العدسة) -->
                     <g class="lm-ring-inner">
-                        <ellipse cx="70" cy="70" rx="33" ry="18" stroke="#c9a84c" stroke-width="1.2" fill="none" opacity="0.52"/>
-                        <ellipse cx="70" cy="70" rx="33" ry="18" stroke="#c9a84c" stroke-width="1.2" fill="none" opacity="0.52" transform="rotate(60 70 70)"/>
-                        <ellipse cx="70" cy="70" rx="33" ry="18" stroke="#c9a84c" stroke-width="1.2" fill="none" opacity="0.52" transform="rotate(120 70 70)"/>
+                        <ellipse cx="70" cy="70" rx="33" ry="18" stroke="#c9a84c"
+                                 stroke-width="1.2" fill="none" opacity="0.52"/>
+                        <ellipse cx="70" cy="70" rx="33" ry="18" stroke="#c9a84c"
+                                 stroke-width="1.2" fill="none" opacity="0.52"
+                                 transform="rotate(60 70 70)"/>
+                        <ellipse cx="70" cy="70" rx="33" ry="18" stroke="#c9a84c"
+                                 stroke-width="1.2" fill="none" opacity="0.52"
+                                 transform="rotate(120 70 70)"/>
                     </g>
-                    <circle cx="70" cy="70" r="23" fill="rgba(6,9,20,0.97)" stroke="#c9a84c" stroke-width="1"/>
-                    <text class="lm-center-breathe" x="70" y="76" text-anchor="middle" font-family="Cinzel, serif" font-size="16" font-weight="700" fill="#f0d080" letter-spacing="2">LM</text>
+
+                    <!-- [ 7 ] دائرة المركز الداكنة -->
+                    <circle cx="70" cy="70" r="23"
+                            fill="rgba(6,9,20,0.97)" stroke="#c9a84c" stroke-width="1"/>
+
+                    <!-- [ 8 ] حروف LM وامضة -->
+                    <text class="lm-center-breathe" x="70" y="76"
+                          text-anchor="middle" font-family="Cinzel, serif"
+                          font-size="16" font-weight="700"
+                          fill="#f0d080" letter-spacing="2">LM</text>
                 </svg>
             </div>
+
+            <!-- اسم الشركة -->
             <div class="loader-brand-name">Live<span>Memories</span></div>
+
+            <!-- الفاصل الزخرفي -->
             <div class="loader-divider"><div class="loader-divider-gem"></div></div>
+
+            <!-- الشعار الفرعي -->
             <div class="loader-tagline">AR Photo Album &nbsp;·&nbsp; Relive Your Best Moments</div>
         </div>
+
         <div class="loader-subtitle">جارٍ تهيئة كاميرا الواقع المعزز…</div>
+
         <div class="loader-bar-track">
             <div class="loader-bar-fill"></div>
         </div>
@@ -768,14 +810,25 @@
     <!-- ===== شارة العلامة التجارية الثابتة ===== -->
     <div id="brand-bar">
         <div class="brand-bar-inner">
+            <!-- مونوغرام مصغّر -->
             <svg class="brand-bar-monogram" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M14 2 L25 7.5 L27 14 L25 20.5 L14 26 L3 20.5 L1 14 L3 7.5 Z" stroke="#c9a84c" stroke-width="0.8" fill="rgba(8,12,24,0.6)" opacity="0.8"/>
-                <ellipse cx="14" cy="14" rx="7" ry="4.5" stroke="#c9a84c" stroke-width="0.9" fill="none" opacity="0.6"/>
-                <ellipse cx="14" cy="14" rx="7" ry="4.5" stroke="#c9a84c" stroke-width="0.9" fill="none" opacity="0.6" transform="rotate(60 14 14)"/>
-                <ellipse cx="14" cy="14" rx="7" ry="4.5" stroke="#c9a84c" stroke-width="0.9" fill="none" opacity="0.6" transform="rotate(120 14 14)"/>
-                <circle cx="14" cy="14" r="4.5" fill="rgba(8,12,24,0.95)" stroke="#c9a84c" stroke-width="0.7"/>
-                <text x="14" y="17.5" text-anchor="middle" font-family="Cinzel,serif" font-size="5" font-weight="700" fill="#f0d080">LM</text>
+                <path d="M14 2 L25 7.5 L27 14 L25 20.5 L14 26 L3 20.5 L1 14 L3 7.5 Z"
+                      stroke="#c9a84c" stroke-width="0.8" fill="rgba(8,12,24,0.6)" opacity="0.8"/>
+                <ellipse cx="14" cy="14" rx="7" ry="4.5" stroke="#c9a84c"
+                         stroke-width="0.9" fill="none" opacity="0.6"/>
+                <ellipse cx="14" cy="14" rx="7" ry="4.5" stroke="#c9a84c"
+                         stroke-width="0.9" fill="none" opacity="0.6"
+                         transform="rotate(60 14 14)"/>
+                <ellipse cx="14" cy="14" rx="7" ry="4.5" stroke="#c9a84c"
+                         stroke-width="0.9" fill="none" opacity="0.6"
+                         transform="rotate(120 14 14)"/>
+                <circle cx="14" cy="14" r="4.5" fill="rgba(8,12,24,0.95)"
+                        stroke="#c9a84c" stroke-width="0.7"/>
+                <text x="14" y="17.5" text-anchor="middle"
+                      font-family="Cinzel,serif" font-size="5" font-weight="700"
+                      fill="#f0d080">LM</text>
             </svg>
+
             <div class="brand-bar-text">
                 <span class="brand-bar-name">LiveMemories</span>
                 <span class="brand-bar-sub">AR Photo Album</span>
@@ -792,12 +845,21 @@
         <div id="scan-line"></div>
     </div>
 
-    <!-- ===== دائرة الماسح الدوارة وسط الشاشة ===== -->
+    <!-- ===== دائرة الماسح الدوارة (تظهر وسط الشاشة أثناء البحث) ===== -->
     <div id="scan-circle">
         <svg viewBox="0 0 140 140" fill="none" xmlns="http://www.w3.org/2000/svg" width="170" height="170">
-            <circle class="lm-arc-tail" cx="70" cy="70" r="65" stroke="#c9a84c" stroke-width="4" stroke-dasharray="35 373" stroke-linecap="round" opacity="0.18"/>
-            <circle class="lm-arc-mid" cx="70" cy="70" r="65" stroke="#c9a84c" stroke-width="3" stroke-dasharray="75 333" stroke-linecap="round" opacity="0.42"/>
-            <circle class="lm-arc-main" cx="70" cy="70" r="65" stroke="#f0d080" stroke-width="2.2" stroke-dasharray="110 298" stroke-linecap="round" opacity="1"/>
+            <!-- ذنب بعيد -->
+            <circle class="lm-arc-tail" cx="70" cy="70" r="65"
+                    stroke="#c9a84c" stroke-width="4"
+                    stroke-dasharray="35 373" stroke-linecap="round" opacity="0.18"/>
+            <!-- ذنب قريب -->
+            <circle class="lm-arc-mid" cx="70" cy="70" r="65"
+                    stroke="#c9a84c" stroke-width="3"
+                    stroke-dasharray="75 333" stroke-linecap="round" opacity="0.42"/>
+            <!-- الرأس المضيء -->
+            <circle class="lm-arc-main" cx="70" cy="70" r="65"
+                    stroke="#f0d080" stroke-width="2.2"
+                    stroke-dasharray="110 298" stroke-linecap="round" opacity="1"/>
         </svg>
     </div>
 
@@ -808,12 +870,14 @@
     </div>
 
     <!-- ===== العبارة الإرشادية ===== -->
-    <div id="instruction-overlay">وجّه الكاميرا نحو الصورة المطبوعة 📸</div>
+    <div id="instruction-overlay">
+        <span class="inst-dot"></span> وجّه الكاميرا نحو الصورة المطبوعة 📸
+    </div>
 
-    <!-- ===== إشعار اكتشاف الصورة ====== -->
+    <!-- ===== إشعار اكتشاف الصورة ===== -->
     <div id="found-toast"></div>
 
-    <!-- ===== الإطار الإرشادي ===== -->
+    <!-- ===== الإطار الإرشادي (مخفي حتى تجهز الكاميرا) ===== -->
     <div id="guide-frame-box" class="hidden">
         <div class="gf-corner tl"></div>
         <div class="gf-corner tr"></div>
@@ -859,22 +923,21 @@
         device-orientation-permission-ui="enabled: false">
 
         <a-assets>
-            <!-- الفيديوهات الـ 10 المستقرة المرفوعة في جيت هاب [1] -->
-            <video id="video-1"  src="./videos/video1.mp4" preload="auto" loop="true" muted playsinline webkit-playsinline crossorigin="anonymous"></video>
-            <video id="video-2"  src="./videos/video2.mp4" preload="auto" loop="true" muted playsinline webkit-playsinline crossorigin="anonymous"></video>
-            <video id="video-3"  src="./videos/video3.mp4" preload="auto" loop="true" muted playsinline webkit-playsinline crossorigin="anonymous"></video>
-            <video id="video-4"  src="./videos/video4.mp4" preload="auto" loop="true" muted playsinline webkit-playsinline crossorigin="anonymous"></video>
-            <video id="video-5"  src="./videos/video5.mp4" preload="auto" loop="true" muted playsinline webkit-playsinline crossorigin="anonymous"></video>
-            <video id="video-6"  src="./videos/video6.mp4" preload="auto" loop="true" muted playsinline webkit-playsinline crossorigin="anonymous"></video>
-            <video id="video-7"  src="./videos/video7.mp4" preload="auto" loop="true" muted playsinline webkit-playsinline crossorigin="anonymous"></video>
-            <video id="video-8"  src="./videos/video8.mp4" preload="auto" loop="true" muted playsinline webkit-playsinline crossorigin="anonymous"></video>
-            <video id="video-9"  src="./videos/video9.mp4" preload="auto" loop="true" muted playsinline webkit-playsinline crossorigin="anonymous"></video>
-            <video id="video-10" src="./videos/video10.mp4" preload="auto" loop="true" muted playsinline webkit-playsinline crossorigin="anonymous"></video>
+            <!-- قائمة الفيديوهات الـ 10 الأصلية -->
+            <video id="video-1"  src="./videos/video1.mp4"  preload="auto" loop muted playsinline webkit-playsinline></video>
+            <video id="video-2"  src="./videos/video2.mp4"  preload="auto" loop muted playsinline webkit-playsinline></video>
+            <video id="video-3"  src="./videos/video3.mp4"  preload="auto" loop muted playsinline webkit-playsinline></video>
+            <video id="video-4"  src="./videos/video4.mp4"  preload="auto" loop muted playsinline webkit-playsinline></video>
+            <video id="video-5"  src="./videos/video5.mp4"  preload="auto" loop muted playsinline webkit-playsinline></video>
+            <video id="video-6"  src="./videos/video6.mp4"  preload="auto" loop muted playsinline webkit-playsinline></video>
+            <video id="video-7"  src="./videos/video7.mp4"  preload="auto" loop muted playsinline webkit-playsinline></video>
+            <video id="video-8"  src="./videos/video8.mp4"  preload="auto" loop muted playsinline webkit-playsinline></video>
+            <video id="video-9"  src="./videos/video9.mp4"  preload="auto" loop muted playsinline webkit-playsinline></video>
+            <video id="video-10" src="./videos/video10.mp4" preload="auto" loop muted playsinline webkit-playsinline></video>
 
-            <!-- الإطار الزخرفي المذهب المتوهج المعتمد للـ AR فوق الفيديو -->
-            <img id="video-frame" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMDAgMjcwIiB3aWR0aD0iMjAwIiBoZWlnaHQ9IjI3MCI+CiAgPHBhdGggZD0iTTIsNTUgTDIsMiBMNTUsMiIgc3Ryb2tlPSIjYzlhODRjIiBzdHJva2Utd2lkdGg9IjMiIGZpbGw9Im5vbmUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgogIDxwYXRoIGQ9Ik05LDQ1IEw5LDkgTDQ1LDkiIHN0cm9rZT0iI2M5YTg0YyIgc3Ryb2tlLXdpZHRoPSIwLjkiIGZpbGw9Im5vbmUiIG9wYWNpdHk9IjAuNTUiLz4KICA8Y2lyY2xlIGN4PSIyIiBjeT0iMiIgcj0iMy41IiBmaWxsPSIjYzlhODRjIi8+CiAgPHBvbHlnb24gcG9pbnRzPSIyMiwyIDI2LDYgMjIsMTAgMTgsNiIgZmlsbD0iI2M5YTg0YyIgb3BhY2l0eT0iMC43Ii8+CiAgPHBhdGggZD0iTTE5OCw1NSBMMTk4LDIgTDE0NSwyIiBzdHJva2U9IiNjOWE4NGMiIHN0cm9rZS13aWR0aD0iMyIgZmlsbD0ibm9uZSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+CiAgPHBhdGggZD0iTTE5MSw0NSBMMTkxLDkgTDE1NSw5IiBzdHJva2U9IiNjOWE4NGMiIHN0cm9rZS13aWR0aD0iMC45IiBmaWxsPSJub25lIiBvcGFjaXR5PSIwLjU1Ii8+CiAgPGNpcmNsZSBjeD0iMTk4IiBjeT0iMiIgcj0iMy41IiBmaWxsPSIjYzlhODRjIi8+CiAgPHBvbHlnb24gcG9pbnRzPSIxNzgsMiAxODIsNiAxNzgsMTAgMTc0LDYiIGZpbGw9IiNjOWE4NGMiIG9wYWNpdHk9IjAuNyIvPgogIDxwYXRoIGQ9Ik0yLDIxNSBMMiwyNjggTDU1LDI2OCIgc3Ryb2tlPSIjYzlhODRjIiBzdHJva2Utd2lkdGg9IjMiIGZpbGw9Im5vbmUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgogIDxwYXRoIGQ9Ik05LDIyNSBMOSwyNjEgTDQ1LDI2MSIgc3Ryb2tlPSIjYzlhODRjIiBzdHJva2Utd2lkdGg9IjAuOSIgZmlsbD0ibm9uZSIgb3BhY2l0eT0iMC41YSIvPgogIDxjaXJjbGUgY3g9IjIiIGN5PSIyNjgiIHI9IjMuNSIgZmlsbD0iI2M5YTg0YyIvPgogIDxwb2x5Z29uIHBvaW50cz0iMjIsMjY4IDI2LDI2NCAyMiwyNjAgMTgsMjY0IiBmaWxsPSIjYzlhODRjIiBvcGFjaXR5PSIwLjciLz4KICA8cGF0aCBkPSJNMTk4LDIxNSBMMTk4LDI2OCBMMTQ1LDI2OCIgc3Ryb2tlPSIjYzlhODRjIiBzdHJva2Utd2lkdGg9IjMiIGZpbGw9Im5vbmUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgogIDxwYXRoIGQ9Ik0xOTEsMjI1IEwxOTEsMjYxIEwxNTUsMjYxIiBzdHJva2U9IiNjOWE4NGMiIHN0cm9rZS13aWR0aD0iMC45IiBmaWxsPSJub25lIiBvcGFjaXR5PSIwLjU1Ii8+CiAgPGNpcmNsZSBjeD0iMTk4IiBjeT0iMjY4IiByPSIzLjUiIGZpbGw9IiNjOWE4NGMiLz4KICA8cG9seWdvbiBwb2ludHM9IjE3OCwyNjggMTgyLDI2NCAxNzgsMjYwIDE3NCwyNjQiIGZpbGw9IiNjOWE4NGMiIG9wYWNpdHk9IjAuNyIvPgogIDxwb2x5Z29uIHBvaW50cz0iMTAwLDEgMTA0LDUgMTAwLDkgOTYsNSIgZmlsbD0iI2M5YTg0YyIgb3BhY2l0eT0iMC44NSIvPgogIDxwb2x5Z29uIHBvaW50cz0iMTAwLDI2OSAxMDQsMjY1IDEwMCwyNjEgOTYsMjY1IiBmaWxsPSIjYzlhODRjIiBvcGFjaXR5PSIwLjg1Ii8+CiAgPHBvbHlnb24gcG9pbnRzPSIxLDEzNSA1LDEzMSA5LDEzNSA1LDEzOSIgZmlsbD0iI2M5YTg0YyIgb3BhY2l0eT0iMC44NSIvPgogIDxwYXRoIGQ9Ik0xOTksMTM1IEwxOTUsMTMxIEwxOTEsMTM1IEwxOTUsMTM5IiBmaWxsPSIjYzlhODRjIiBvcGFjaXR5PSIwLjg1Ii8+CiAgPGxpbmUgeDE9IjIiIHkxPSI3MCIgeDI9IjIiIHkyPSIxMjAiIHN0cm9rZT0iI2M5YTg0YyIgc3Ryb2tlLXdpZHRoPSIwLjYiIG9wYWNpdHk9IjAuMjUiLz4KICA8bGluZSB4MT0iMiIgeTE9IjExMCIgeDI9IjIiIHkyPSIyMDAiIHN0cm9rZT0iI2M5YTg0YyIgc3Ryb2tlLXdpZHRoPSIwLjYiIG9wYWNpdHk9IjAuMjUiLz4KICA8bGluZSB4MT0iMTk4IiB5MT0iNzAiIHgyPSIxOTgiIHkyPSIxMjAiIHN0cm9rZT0iI2M5YTg0YyIgc3Ryb2tlLXdpZHRoPSIwLjYiIG9wYWNpdHk9IjAuMjUiLz4KICA8bGluZSB4MT0iMTk4IiB5MT0iMTUwIiB4Mj0iMTk4IiB5Mj0iMjAwIiBzdHJva2U9IiNjOWE4NGMiIHN0cm9rZS13aWR0aD0iMC42IiBvcGFjaXR5PSIwLjI1Ii8+CiAgPGxpbmUgeDE9IjcyIiB5MT0iMiIgeDI9IjkwIiB5Mj0iMiIgc3Ryb2tlPSIjYzlhODRjIiBzdHJva2Utd2lkdGg9IjAuNiIgb3BhY2l0eT0iMC4yNSIvPgogIDxsaW5lIHgxPSIxMTAiIHkxPSIyIiB4Mj0iMTMwIiB5Mj0iIiBzdHJva2U9IiNjOWE4NGMiIHN0cm9rZT0iMC42IiBvcGFjaXR5PSIwLjI1Ii8+CiAgPGxpbmUgeDE9IjcwIiB5MT0iMjY4IiB4Mj0iOTAiIHkyPSIyNjgiIHN0cm9rZT0iI2M5YTg0YyIgc3Ryb2tlLXdpZHRoPSIwLjYiIG9wYWNpdHk9IjAuMjUiLz4KICA8bGluZSB4MT0iMTEwIiB5MT0iMjY4IiB4Mj0iMTMwIiB5Mj0iMjY4IiBzdHJva2U9IiNjOWE4NGMiIHN0cm9rZT0iMC42IiBvcGFjaXR5PSIwLjI1Ii8+Cjwvc3ZnPg==" crossorigin="anonymous">
+            <img id="video-frame" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMDAgMjcwIiB3aWR0aD0iMjAwIiBoZWlnaHQ9IjI3MCI+CiAgPHBhdGggZD0iTTIsNTUgTDIsMiBMNTUsMiIgc3Ryb2tlPSIjYzlhODRjIiBzdHJva2Utd2lkdGg9IjMiIGZpbGw9Im5vbmUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgogIDxwYXRoIGQ9Ik05LDQ1IEw5LDkgTDQ1LDkiIHN0cm9rZT0iI2M5YTg0YyIgc3Ryb2tlLXdpZHRoPSIwLjkiIGZpbGw9Im5vbmUiIG9wYWNpdHk9IjAuNTUiLz4KICA8Y2lyY2xlIGN4PSIyIiBjeT0iMiIgcj0iMy41IiBmaWxsPSIjYzlhODRjIi8+CiAgPHBvbHlnb24gcG9pbnRzPSIyMiwyIDI2LDYgMjIsMTAgMTgsNiIgZmlsbD0iI2M5YTg0YyIgb3BhY2l0eT0iMC43Ii8+CiAgPHBhdGggZD0iTTE5OCw1NSBMMTk4LDIgTDE0NSwyIiBzdHJva2U9IiNjOWE4NGMiIHN0cm9rZS13aWR0aD0iMyIgZmlsbD0ibm9uZSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+CiAgPHBhdGggZD0iTTE5MSw0NSBMMTkxLDkgTDE1NSw5IiBzdHJva2U9IiNjOWE4NGMiIHN0cm9rZS13aWR0aD0iMC45IiBmaWxsPSJub25lIiBvcGFjaXR5PSIwLjU1Ii8+CiAgPGNpcmNsZSBjeD0iMTk4IiBjeT0iMiIgcj0iMy41IiBmaWxsPSIjYzlhODRjIi8+CiAgPHBvbHlnb24gcG9pbnRzPSIxNzgsMiAxODIsNiAxNzgsMTAgMTc0LDYiIGZpbGw9IiNjOWE4NGMiIG9wYWNpdHk9IjAuNyIvPgogIDxwYXRoIGQ9Ik0yLDIxNSBMMiwyNjggTDU1LDI2OCIgc3Ryb2tlPSIjYzlhODRjIiBzdHJva2Utd2lkdGg9IjMiIGZpbGw9Im5vbmUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgogIDxwYXRoIGQ9Ik05LDIyNSBMOSwyNjEgTDQ1LDI2MSIgc3Ryb2tlPSIjYzlhODRjIiBzdHJva2Utd2lkdGg9IjAuOSIgZmlsbD0ibm9uZSIgb3BhY2l0eT0iMC41YSIvPgogIDxjaXJjbGUgY3g9IjIiIGN5PSIyNjgiIHI9IjMuNSIgZmlsbD0iI2M5YTg0YyIvPgogIDwbG9seWdvbiBwb2ludHM9IjIyLDI2OCAyNiwyNjQgMjIsMjYwIDE4LDI2NCIgZmlsbD0iI2M5YTg0YyIgb3BhY2l0eT0iMC43Ii8+CiAgPHBhdGggZD0iTTE5OCwyMTUgTTE5OCwyNjggTDE0NSwyNjgiIHN0cm9rZT0iI2M5YTg0YyIgc3Ryb2tlLXdpZHRoPSIzIiBmaWxsPSJub25lIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KICA8cGF0aCBkPSJNMTkxLDIyNSBMMTkxLDI2MSBMMTU1LDI2MSIgc3Ryb2tlPSIjYzlhODRjIiBzdHJva2Utd2lkdGg9IjAuOSIgZmlsbD0ibm9uZSIgb3BhY2l0eT0iMC41YSIvPgogIDxjaXJjbGUgY3g9IjE5OCIgY3k9IjI2OCIgcj0iMy41IiBmaWxsPSIjYzlhODRjIi8+CiAgPHBvbHlnb24gcG9pbnRzPSIxNzgsMjY4IDE4MiwyNjQgMTc4LDI2MCAxNzQsMjY0IiBmaWxsPSIjYzlhODRjIiBvcGFjaXR5PSIwLjciLz4KICA8cG9seWdvbiBwb2ludHM9IjEwMCwxIDEwNCw1IDEwMCw5IDk2LDUiIGZpbGw9IiNjOWE4NGMiIG9wYWNpdHk9IjAuODUiLz4KICA8cG9seWdvbiBwb2ludHM9IjEwMCwyNjkgMTA0LDI2NSIDEwMCwyNjEgOTYsMjY1IiBmaWxsPSIjYzlhODRjIiBvcGFjaXR5PSIwLjg1Ii8+CiAgPHBvbHlnb24gcG9pbnRzPSIxLDEzNSA1LDEzMSA5LDEzNSA1LDEzOSIgZmlsbD0iI2M5YTg0YyIgb3BhY2l0eT0iMC44NSIvPgogIDxwYXRoIGQ9Ik0xOTksMTM1IEwxOTUsMTMxIEwxOTEsMTM1IEwxOTUsMTM5IiBmaWxsPSIjYzlhODRjIiBvcGFjaXR5PSIwLjg1Ii8+CiAgPGxpbmUgeDE9IjIiIHkxPSI3MCIgeDI9IjIiIHkyPSIxMjAiIHN0cm9rZT0iI2M5YTg0YyIgc3Ryb2tlLXdpZHRoPSIwLjYiIG9wYWNpdHk9IjAuMjUiLz4KICA8bGluZSB4MT0iMiIgeTE9IjExMCIgeDI9IjIiIHkyPSIyMDAiIHN0cm9rZT0iI2M5YTg0YyIgc3Ryb2tlLXdpZHRoPSIwLjYiIG9wYWNpdHk9IjAuMjUiLz4KICA8bGluZSB4MT0iMTk4IiB5MT0iNzAiIHgyPSIxOTgiIHkyPSIxMjAiIHN0cm9rZT0iI2M5YTg0YyIgc3Ryb2tlLXdpZHRoPSIwLjYiIG9wYWNpdHk9IjAuMjUiLz4KICA8bGluZSB4MT0iMTk4IiB5MT0iMTUwIiB4Mj0iMTk4IiB5Mj0iMjAwIiBzdHJva2U9IiNjOWE4NGMiIHN0cm9rZT0iMC42IiBvcGFjaXR5PSIwLjI1Ii8+CiAgPGxpbmUgeDE9IjcyIiB5MT0iMiIgeDI9IjkwIiB5Mj0iMiIgc3Ryb2tlPSIjYzlhODRjIiBzdHJva2Utd2lkdGg9IjAuNiIgb3BhY2l0eT0iMC4yNSIvPgogIDxsaW5lIHgxPSIxMTAiIHkxPSIyIiB4Mj0iMTMwIiB5Mj0iMiIgc3Ryb2tlPSIjYzlhODRjIiBzdHJva2Utd2lkdGg9IjAuNiIgb3BhY2l0eT0iMC4yNSIvPgogIDxsaW5lIHgxPSI3MCIgeTE9IjI2OCIgeDI9IjkwIiB5Mj0iMjY4IiBzdHJva2U9IiNjOWE4NGMiIHN0cm9rZT0iMC42IiBvcGFjaXR5PSIwLjI1Ii8+CiAg<bGluZSB4MT0iMTEwIiB5MT0iMjY4IiB4Mj0iMTMwIiB5Mj0iMjY4IiBzdHJva2U9IiNjOWE4NGMiIHN0cm9rZT0iMC42IiBvcGFjaXR5PSIwLjI1Ii8+Cjwvc3ZnPg==" crossorigin="anonymous">
 
-            <!-- ملف الموسيقى الموحد المرفوع في جيت هاب بجانب ملف index.html [1] -->
+            <!-- ملف الموسيقى الموحد music.mp3 [1] -->
             <audio id="bg-music" src="./music.mp3" preload="auto" loop="true" crossorigin="anonymous"></audio>
         </a-assets>
 
